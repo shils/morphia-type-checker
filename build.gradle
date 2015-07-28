@@ -1,0 +1,12 @@
+apply plugin: 'groovy'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile 'org.codehaus.groovy:groovy-all:2.4.3'
+  compile 'org.mongodb.morphia:morphia:1.0.1'
+  testCompile 'org.codehaus.groovy:groovy-all:2.4.3'
+  testCompile 'junit:junit:4.11'
+}
