@@ -39,15 +39,25 @@ class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension impleme
 
   boolean beforeVisitClass(ClassNode classNode) {
     setEntityType(classNode.getUnresolvedSuperClass(false).genericsTypes[0].type)
-    false
+    return false
   }
 
-  void validateQueryFieldCall(MethodCall call) {
-    String fieldName = ((ConstantExpression)((ArgumentListExpression) call.arguments).expressions.first()).text
-    FieldNode entityField = entityType.getField(fieldName)
-    if (!entityField || entityField.isStatic() || isFieldTransient(entityField)) {
-      addStaticTypeError("No such field: $fieldName for class: ${entityType.getNameWithoutPackage()}".toString(), call.receiver)
+  private void validateQueryFieldCall(MethodCall call) {
+    ConstantExpression fieldArgument = (ConstantExpression)((ArgumentListExpression) call.arguments).expressions.first()
+    String[] fieldNames = fieldArgument.text.split('\\.')
+    ClassNode ownerType = entityType
+    for (String fieldName: fieldNames) {
+      FieldNode field = ownerType.getField(fieldName)
+      if (!field || field.isStatic() || isFieldTransient(field)) {
+        addNoPersistedFieldError(fieldName, ownerType, fieldArgument)
+        return
+      }
+      ownerType = field.type
     }
+  }
+
+  private void addNoPersistedFieldError(String fieldName, ClassNode ownerType, ASTNode errorNode) {
+    addStaticTypeError("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString(), errorNode)
   }
 
   private static boolean isFieldTransient(FieldNode field) {
