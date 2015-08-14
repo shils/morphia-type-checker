@@ -1,10 +1,11 @@
-package com.shils
+package com.shils.morphia
 
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
 import groovyjarjarasm.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
+import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.ast.FieldNode
@@ -14,19 +15,21 @@ import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.MethodCall
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
 import org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport
+import org.mongodb.morphia.annotations.Property
 import org.mongodb.morphia.annotations.Transient
 import org.mongodb.morphia.query.Query
 import org.mongodb.morphia.query.UpdateOperations
 
 @InheritConstructors
 @CompileStatic
-class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
+class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
 
-  ClassNode entityType
   static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
   static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
   static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
+  static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
 
+  ClassNode entityType
   @Override
   void afterMethodCall(MethodCall call) {
     ASTNode receiver = call.receiver
@@ -47,12 +50,20 @@ class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension impleme
     String[] fieldNames = fieldArgument.text.split('\\.')
     ClassNode ownerType = entityType
     for (String fieldName: fieldNames) {
-      FieldNode field = ownerType.getField(fieldName)
+      FieldNode field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, fieldArgument)
         return
       }
       ownerType = field.type
+    }
+  }
+
+  private static FieldNode findFieldByPropertyName(ClassNode ownerType, String propertyName) {
+    return ownerType.fields.find {
+      AnnotationNode anno = it.getAnnotations(PROPERTY_TYPE).find()
+      Expression expr = anno?.getMember('value')
+      (expr instanceof ConstantExpression) && ((ConstantExpression) expr).value == propertyName
     }
   }
 
