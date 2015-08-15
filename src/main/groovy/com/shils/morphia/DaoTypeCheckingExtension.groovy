@@ -34,8 +34,8 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
   void afterMethodCall(MethodCall call) {
     ASTNode receiver = call.receiver
     if (receiver instanceof Expression) {
-      if (StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf(((Expression) receiver).type, QUERY_TYPE) && call.methodAsString == 'field') {
-        validateQueryFieldCall(call)
+      if (StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf(((Expression) receiver).type, QUERY_TYPE)) {
+        validateQueryMethodCall(call)
       }
     }
   }
@@ -45,14 +45,32 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
     return false
   }
 
-  private void validateQueryFieldCall(MethodCall call) {
-    ConstantExpression fieldArgument = (ConstantExpression)((ArgumentListExpression) call.arguments).expressions.first()
-    String[] fieldNames = fieldArgument.text.split('\\.')
+  private void validateQueryMethodCall(MethodCall call) {
+    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.first()
+    if (!(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
+      return
+
+    String argValue = (String) ((ConstantExpression) fieldArgExpr).value
+    switch (call.methodAsString) {
+      case 'field':
+        validateFieldArgument(argValue, fieldArgExpr)
+        break
+      case 'filter':
+        validateFieldArgument(argValue.split(' ').first(), fieldArgExpr)
+        break
+      case 'order':
+        validateFieldArgument(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
+        break
+    }
+  }
+
+  private void validateFieldArgument(String fieldArgument, ASTNode argumentNode) {
+    String[] fieldNames = fieldArgument.split('\\.')
     ClassNode ownerType = entityType
     for (String fieldName: fieldNames) {
       FieldNode field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
       if (!field || field.isStatic() || isFieldTransient(field)) {
-        addNoPersistedFieldError(fieldName, ownerType, fieldArgument)
+        addNoPersistedFieldError(fieldName, ownerType, argumentNode)
         return
       }
       ownerType = field.type
