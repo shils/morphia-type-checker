@@ -3,7 +3,7 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
-import groovyjarjarasm.asm.Opcodes
+import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
@@ -21,6 +21,11 @@ import org.mongodb.morphia.query.UpdateOperations
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
+/**
+ * A type checking extension for classes extending {@link org.mongodb.morphia.dao.DAO}.
+ *
+ * @author Shil Sinha
+ */
 @InheritConstructors
 @CompileStatic
 class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
