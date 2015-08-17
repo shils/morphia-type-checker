@@ -14,11 +14,12 @@ import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.MethodCall
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
-import org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport
 import org.mongodb.morphia.annotations.Property
 import org.mongodb.morphia.annotations.Transient
 import org.mongodb.morphia.query.Query
 import org.mongodb.morphia.query.UpdateOperations
+
+import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
 @InheritConstructors
 @CompileStatic
@@ -28,14 +29,18 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
   static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
   static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
   static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
+  static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
 
   ClassNode entityType
   @Override
   void afterMethodCall(MethodCall call) {
     ASTNode receiver = call.receiver
     if (receiver instanceof Expression) {
-      if (StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf(((Expression) receiver).type, QUERY_TYPE)) {
+      ClassNode receiverType = ((Expression) receiver).type
+      if (implementsInterfaceOrIsSubclassOf(receiverType, QUERY_TYPE)) {
         validateQueryMethodCall(call)
+      } else if (implementsInterfaceOrIsSubclassOf(receiverType, UPDATE_OPERATIONS_TYPE)) {
+        validateUpdateOpsMethodCall(call)
       }
     }
   }
@@ -53,27 +58,71 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
     String argValue = (String) ((ConstantExpression) fieldArgExpr).value
     switch (call.methodAsString) {
       case 'field':
-        validateFieldArgument(argValue, fieldArgExpr)
+        resolveFieldArgument(argValue, fieldArgExpr)
         break
       case 'filter':
-        validateFieldArgument(argValue.split(' ').first(), fieldArgExpr)
+        resolveFieldArgument(argValue.split(' ').first(), fieldArgExpr)
         break
       case 'order':
-        validateFieldArgument(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
+        resolveFieldArgument(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
         break
     }
   }
 
-  private void validateFieldArgument(String fieldArgument, ASTNode argumentNode) {
+  private void validateUpdateOpsMethodCall(MethodCall call) {
+    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.first()
+    if (!(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
+      return
+
+    String argValue = (String) ((ConstantExpression) fieldArgExpr).value
+    switch (call.methodAsString) {
+      case 'set':
+      case 'setOnInsert':
+      case 'unset':
+        resolveFieldArgument(argValue, fieldArgExpr)
+        break
+      case 'add':
+      case 'addAll':
+      case 'removeFirst':
+      case 'removeLast':
+      case 'removeAll':
+        validateArrayFieldArgument(argValue, fieldArgExpr)
+        break
+      case 'dec':
+      case 'inc':
+      case 'max':
+      case 'min':
+        validateNumericFieldArgument(argValue, fieldArgExpr)
+        break
+    }
+  }
+
+  private FieldNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
     String[] fieldNames = fieldArgument.split('\\.')
     ClassNode ownerType = entityType
+    FieldNode field = null
     for (String fieldName: fieldNames) {
-      FieldNode field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
+      field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
-        return
+        return null
       }
       ownerType = field.type
+    }
+    return field
+  }
+
+  private void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
+    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
+    if (field && !implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE) && !field.type.isArray()){
+      addStaticTypeError("$fieldArgument does not refer to an array field", argumentNode)
+    }
+  }
+
+  private void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
+    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
+    if (field && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(field.type), ClassHelper.Number_TYPE)){
+      addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
     }
   }
 
