@@ -29,7 +29,7 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
  */
 @InheritConstructors
 @CompileStatic
-class DAOTypeCheckingExtension1 extends AbstractTypeCheckingExtension implements Opcodes {
+class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
 
   static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
   static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
