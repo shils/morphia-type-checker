@@ -3,6 +3,7 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import org.codehaus.groovy.ast.expr.VariableExpression
 import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.AnnotationNode
@@ -28,7 +29,7 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
  */
 @InheritConstructors
 @CompileStatic
-class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
+class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
 
   static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
   static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
@@ -37,10 +38,15 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
   static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
 
   ClassNode entityType
+
   @Override
   void afterMethodCall(MethodCall call) {
     ASTNode receiver = call.receiver
     if (receiver instanceof Expression) {
+      if (receiver instanceof VariableExpression && receiver.isThisExpression()) {
+        validateDAOMethodCall(call)
+        return
+      }
       ClassNode receiverType = ((Expression) receiver).type
       if (implementsInterfaceOrIsSubclassOf(receiverType, QUERY_TYPE)) {
         validateQueryMethodCall(call)
@@ -99,6 +105,26 @@ class DaoTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
       case 'min':
         validateNumericFieldArgument(argValue, fieldArgExpr)
         break
+    }
+  }
+
+  private void validateDAOMethodCall(MethodCall call) {
+    //expect that DAO methods with String 'field' parameters will also have Object 'value' parameters
+    if (((ArgumentListExpression) call.arguments).expressions.size() < 2)
+      return
+
+    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.first()
+    if (!(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
+      return
+
+    String argValue = (String) ((ConstantExpression) fieldArgExpr).value
+    switch (call.methodAsString) {
+      case 'findIds':
+      case 'findOneId':
+      case 'exists':
+      case 'count':
+      case 'findOne':
+        resolveFieldArgument(argValue, fieldArgExpr)
     }
   }
 
