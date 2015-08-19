@@ -137,8 +137,13 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
         return null
+      } else if (field.type.isArray()) {
+        ownerType = field.type.componentType
+      } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
+        ownerType = field.type.genericsTypes[0].type
+      } else {
+        ownerType = field.type
       }
-      ownerType = field.type
     }
     return field
   }

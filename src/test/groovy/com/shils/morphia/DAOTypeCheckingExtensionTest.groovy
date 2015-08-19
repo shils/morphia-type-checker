@@ -310,6 +310,29 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     assert message.contains('No such persisted field: countA for class: com.shils.morphia.A')
     assert message.contains('No such persisted field: findOneA for class: com.shils.morphia.A')
   }
+
+  void testEmbeddedArrayFieldQueryShouldNotFail() {
+    assertScript '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedArrayQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedArray.aString').equal(embeddedAString))
+        }
+
+        A anEmbeddedCollectionQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedCollection.aString').equal(embeddedAString))
+        }
+
+      }
+      null
+    '''
+  }
 }
 
 @Entity
@@ -320,6 +343,8 @@ class A {
   @Property('aString')
   String aStringProperty
   B embedded
+  B[] embeddedArray
+  Collection<B> embeddedCollection
 }
 
 @Embedded
