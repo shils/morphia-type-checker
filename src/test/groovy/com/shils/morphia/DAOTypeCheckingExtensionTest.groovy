@@ -28,7 +28,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
   }
 
-  void testEmbeddedFieldQueryShouldNotFail(){
+  void testEmbeddedFieldQuery(){
     assertScript '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
@@ -47,7 +47,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     '''
   }
 
-  void testPropertyAnnotatedFieldQueryShouldNotFail(){
+  void testPropertyAnnotatedFieldQuery(){
     assertScript '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
@@ -66,7 +66,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     '''
   }
 
-  void testPropertyAnnotatedEmbeddedFieldQueryShouldNotFail(){
+  void testPropertyAnnotatedEmbeddedFieldQuery(){
     assertScript '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
@@ -311,7 +311,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     assert message.contains('No such persisted field: findOneA for class: com.shils.morphia.A')
   }
 
-  void testEmbeddedArrayFieldQueryShouldNotFail() {
+  void testEmbeddedArrayFieldQuery() {
     assertScript '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
