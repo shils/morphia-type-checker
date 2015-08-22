@@ -328,10 +328,66 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
         A anEmbeddedCollectionQuery(String embeddedAString) {
           findOne(createQuery().field('embeddedCollection.aString').equal(embeddedAString))
         }
-
       }
       null
     '''
+
+    def message = shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedArrayQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedArray.arrayString').equal(embeddedAString))
+        }
+
+        A anEmbeddedCollectionQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedCollection.collectionString').equal(embeddedAString))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: arrayString for class: com.shils.morphia.B')
+    assert message.contains('No such persisted field: collectionString for class: com.shils.morphia.B')
+  }
+
+  void testEmbeddedBoundedWCCollectionFieldQuery() {
+    assertScript '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedBoundedWCCollectionQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedBoundedWCCollection.aString').equal(embeddedAString))
+        }
+      }
+      null
+    '''
+
+    def message = shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedBoundedWCCollectionQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedBoundedWCCollection.aStrin').equal(embeddedAString))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
   }
 
   void testEmbeddedMapFieldQuery() {
@@ -347,7 +403,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
         A anEmbeddedMapQuery(String embeddedAString) {
           findOne(createQuery().field('embeddedMap.foo.aString').equal(embeddedAString))
         }
-
       }
       null
     '''
@@ -364,7 +419,41 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
         A anEmbeddedMapQuery(String embeddedAString) {
           findOne(createQuery().field('embeddedMap.foo.aStrin').equal(embeddedAString))
         }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+  }
 
+  void testEmbeddedBoundedWCMapFieldQuery() {
+    assertScript '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedBoundedWCMapQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedBoundedWCMap.foo.aString').equal(embeddedAString))
+        }
+      }
+      null
+    '''
+
+    def message = shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedBoundedWCMapQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedBoundedWCMap.foo.aStrin').equal(embeddedAString))
+        }
       }
       null
     '''
@@ -382,7 +471,9 @@ class A {
   B embedded
   B[] embeddedArray
   Collection<B> embeddedCollection
+  Collection<? extends B> embeddedBoundedWCCollection
   Map<String, B> embeddedMap
+  Map<String, ? extends B> embeddedBoundedWCMap
 }
 
 @Embedded

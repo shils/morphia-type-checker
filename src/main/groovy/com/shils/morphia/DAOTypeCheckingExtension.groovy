@@ -3,6 +3,7 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import org.codehaus.groovy.ast.GenericsType
 import org.codehaus.groovy.ast.expr.VariableExpression
 import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
@@ -145,9 +146,9 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
       } else if (field.type.isArray()) {
         ownerType = field.type.componentType
       } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
-        ownerType = field.type.genericsTypes[0].type
+        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 0) : ClassHelper.OBJECT_TYPE
       } else if (implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
-        ownerType = field.type.genericsTypes[1].type
+        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 1) : ClassHelper.OBJECT_TYPE
       } else {
         ownerType = field.type
       }
@@ -185,4 +186,8 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
     return field.modifiers & ACC_TRANSIENT || field.getAnnotations(TRANSIENT_TYPE)
   }
 
+  private static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
+    GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
+    return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type
+  }
 }
