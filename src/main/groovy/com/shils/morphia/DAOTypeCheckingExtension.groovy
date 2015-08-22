@@ -133,6 +133,11 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
     ClassNode ownerType = entityType
     FieldNode field = null
     for (String fieldName: fieldNames) {
+      if (field && implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
+        field = null
+        continue
+      }
+
       field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
@@ -141,6 +146,8 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
         ownerType = field.type.componentType
       } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
         ownerType = field.type.genericsTypes[0].type
+      } else if (implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
+        ownerType = field.type.genericsTypes[1].type
       } else {
         ownerType = field.type
       }

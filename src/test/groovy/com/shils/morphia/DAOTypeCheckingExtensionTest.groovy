@@ -333,6 +333,43 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
       null
     '''
   }
+
+  void testEmbeddedMapFieldQuery() {
+    assertScript '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedMapQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedMap.foo.aString').equal(embeddedAString))
+        }
+
+      }
+      null
+    '''
+
+    def message = shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import groovy.transform.CompileStatic
+      import com.shils.morphia.A
+
+      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anEmbeddedMapQuery(String embeddedAString) {
+          findOne(createQuery().field('embeddedMap.foo.aStrin').equal(embeddedAString))
+        }
+
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+  }
 }
 
 @Entity
@@ -345,6 +382,7 @@ class A {
   B embedded
   B[] embeddedArray
   Collection<B> embeddedCollection
+  Map<String, B> embeddedMap
 }
 
 @Embedded
