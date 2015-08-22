@@ -3,21 +3,14 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
-import org.codehaus.groovy.ast.GenericsType
 import org.codehaus.groovy.ast.expr.VariableExpression
-import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
-import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
-import org.codehaus.groovy.ast.FieldNode
 import org.codehaus.groovy.ast.expr.ArgumentListExpression
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.MethodCall
-import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
-import org.mongodb.morphia.annotations.Property
-import org.mongodb.morphia.annotations.Transient
 import org.mongodb.morphia.query.Query
 import org.mongodb.morphia.query.UpdateOperations
 
@@ -30,15 +23,15 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
  */
 @InheritConstructors
 @CompileStatic
-class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
+class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
 
   static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
   static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
-  static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
-  static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
-  static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
 
-  ClassNode entityType
+  @Override
+  ClassNode currentEntityType(){
+    return getEnclosingClassNode().getUnresolvedSuperClass(false).genericsTypes[0].type
+  }
 
   @Override
   void afterMethodCall(MethodCall call) {
@@ -55,11 +48,6 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
         validateUpdateOpsMethodCall(call)
       }
     }
-  }
-
-  boolean beforeVisitClass(ClassNode classNode) {
-    setEntityType(classNode.getUnresolvedSuperClass(false).genericsTypes[0].type)
-    return false
   }
 
   private void validateQueryMethodCall(MethodCall call) {
@@ -127,67 +115,5 @@ class DAOTypeCheckingExtension extends AbstractTypeCheckingExtension implements 
       case 'findOne':
         resolveFieldArgument(argValue, fieldArgExpr)
     }
-  }
-
-  private FieldNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    String[] fieldNames = fieldArgument.split('\\.')
-    ClassNode ownerType = entityType
-    FieldNode field = null
-    for (String fieldName: fieldNames) {
-      if (field && implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
-        field = null
-        continue
-      }
-
-      field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
-      if (!field || field.isStatic() || isFieldTransient(field)) {
-        addNoPersistedFieldError(fieldName, ownerType, argumentNode)
-        return null
-      } else if (field.type.isArray()) {
-        ownerType = field.type.componentType
-      } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
-        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 0) : ClassHelper.OBJECT_TYPE
-      } else if (implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
-        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 1) : ClassHelper.OBJECT_TYPE
-      } else {
-        ownerType = field.type
-      }
-    }
-    return field
-  }
-
-  private void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
-    if (field && !implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE) && !field.type.isArray()){
-      addStaticTypeError("$fieldArgument does not refer to an array field", argumentNode)
-    }
-  }
-
-  private void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
-    if (field && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(field.type), ClassHelper.Number_TYPE)){
-      addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
-    }
-  }
-
-  private static FieldNode findFieldByPropertyName(ClassNode ownerType, String propertyName) {
-    return ownerType.fields.find {
-      AnnotationNode anno = it.getAnnotations(PROPERTY_TYPE).find()
-      Expression expr = anno?.getMember('value')
-      (expr instanceof ConstantExpression) && ((ConstantExpression) expr).value == propertyName
-    }
-  }
-
-  private void addNoPersistedFieldError(String fieldName, ClassNode ownerType, ASTNode errorNode) {
-    addStaticTypeError("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString(), errorNode)
-  }
-
-  private static boolean isFieldTransient(FieldNode field) {
-    return field.modifiers & ACC_TRANSIENT || field.getAnnotations(TRANSIENT_TYPE)
-  }
-
-  private static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
-    GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
-    return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type
   }
 }
