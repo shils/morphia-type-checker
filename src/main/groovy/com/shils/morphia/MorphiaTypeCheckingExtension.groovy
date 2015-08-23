@@ -3,6 +3,8 @@ package com.shils.morphia
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
 import org.codehaus.groovy.ast.GenericsType
+import org.mongodb.morphia.annotations.Embedded
+import org.mongodb.morphia.annotations.Serialized
 import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.AnnotationNode
@@ -26,8 +28,13 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
 abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
 
   static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
+  static final ClassNode EMBEDDED_TYPE = ClassHelper.make(Embedded.class)
   static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
+  static final ClassNode REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference)
+  static final ClassNode SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
   static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
+
+  static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
 
   abstract ClassNode currentEntityType()
 
@@ -41,7 +48,7 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
         continue
       }
 
-      field = ownerType.getField(fieldName) ?: findFieldByPropertyName(ownerType, fieldName)
+      field = ownerType.getField(fieldName) ?: findFieldByOverridingName(ownerType, fieldName)
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
         return null
@@ -76,19 +83,21 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     addStaticTypeError("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString(), errorNode)
   }
 
-  private static FieldNode findFieldByPropertyName(ClassNode ownerType, String propertyName) {
-    return ownerType.fields.find {
-      AnnotationNode anno = it.getAnnotations(PROPERTY_TYPE).find()
+  static FieldNode findFieldByOverridingName(ClassNode ownerType, String overridingName) {
+    return ownerType.fields.find { field ->
+      AnnotationNode anno = field.getAnnotations().find {
+        NAME_OVERRIDING_TYPES.contains(it.classNode)
+      }
       Expression expr = anno?.getMember('value')
-      (expr instanceof ConstantExpression) && ((ConstantExpression) expr).value == propertyName
+      (expr instanceof ConstantExpression) && ((ConstantExpression) expr).value == overridingName
     }
   }
 
-  private static boolean isFieldTransient(FieldNode field) {
+  static boolean isFieldTransient(FieldNode field) {
     return field.modifiers & ACC_TRANSIENT || field.getAnnotations(TRANSIENT_TYPE)
   }
 
-  private static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
+  static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
     GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
     return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type
   }
