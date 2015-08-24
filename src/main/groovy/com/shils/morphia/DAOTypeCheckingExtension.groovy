@@ -51,8 +51,8 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   }
 
   private void validateQueryMethodCall(MethodCall call) {
-    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.first()
-    if (!(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
+    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.find()
+    if (!fieldArgExpr || !(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
       return
 
     String argValue = (String) ((ConstantExpression) fieldArgExpr).value
@@ -70,8 +70,8 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   }
 
   private void validateUpdateOpsMethodCall(MethodCall call) {
-    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.first()
-    if (!(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
+    Expression fieldArgExpr = ((ArgumentListExpression) call.arguments).expressions.find()
+    if (!fieldArgExpr || !(fieldArgExpr instanceof ConstantExpression) || !(((ConstantExpression) fieldArgExpr).value instanceof String))
       return
 
     String argValue = (String) ((ConstantExpression) fieldArgExpr).value
