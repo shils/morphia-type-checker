@@ -10,10 +10,7 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
   @Override
   GroovyShell createNewShell() {
     def config = new CompilerConfiguration()
-    def ic = new ImportCustomizer()
-    ic.addStaticStars('org.codehaus.groovy.control.CompilePhase')
-    ic.addStaticStars('org.codehaus.groovy.ast.ClassHelper')
-    ic.addImports(
+    def ic = new ImportCustomizer().addImports(
             'org.mongodb.morphia.annotations.Entity',
             'org.mongodb.morphia.annotations.Embedded',
             'org.mongodb.morphia.annotations.Indexes',
@@ -21,7 +18,7 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
             'org.mongodb.morphia.annotations.Field',
             'groovy.transform.CompileStatic',
     )
-    def asttc = new ASTTransformationCustomizer(CompileStatic.class, extensions: ['com.shils.morphia.EntityTypeCheckingExtension'])
+    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['com.shils.morphia.EntityTypeCheckingExtension'])
     config.addCompilationCustomizers(ic, asttc)
     new GroovyShell(config)
   }

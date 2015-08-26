@@ -1,27 +1,40 @@
 package com.shils.morphia
 
+import groovy.transform.CompileStatic
 import org.bson.types.ObjectId
+import org.codehaus.groovy.control.CompilerConfiguration
+import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer
+import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Entity
 import org.mongodb.morphia.annotations.Id
 import org.mongodb.morphia.annotations.Property;
 
-class DAOTypeCheckingExtensionTest extends GroovyTestCase {
+class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
+
+  @Override
+  GroovyShell createNewShell() {
+    def config = new CompilerConfiguration()
+    def ic = new ImportCustomizer().addImports(
+            'org.mongodb.morphia.dao.BasicDAO',
+            'org.mongodb.morphia.Key',
+            'org.bson.types.ObjectId',
+            'groovy.transform.CompileStatic',
+            'com.shils.morphia.A',
+            'com.shils.morphia.B'
+    )
+    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['com.shils.morphia.DAOTypeCheckingExtension'])
+    config.addCompilationCustomizers(ic, asttc)
+    new GroovyShell(config)
+  }
 
   void testIncorrectFieldQueryShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(int anInt) {
           findOne(createQuery().field('aInt').equal(anInt))
         }
-
       }
       null
     '''
@@ -29,51 +42,31 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
   }
 
   void testEmbeddedFieldQuery(){
-    assertScript '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+    shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedQuery(String embeddedAString) {
           findOne(createQuery().field('embedded.aString').equal(embeddedAString))
         }
-
       }
       null
     '''
   }
 
   void testPropertyAnnotatedFieldQuery(){
-    assertScript '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+    shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(String aStringProperty) {
           findOne(createQuery().field('aString').equal(aStringProperty))
         }
-
       }
       null
     '''
   }
 
   void testPropertyAnnotatedEmbeddedFieldQuery(){
-    assertScript '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+    shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(String aStringProperty) {
@@ -87,18 +80,11 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testIncorrectFilterQueryShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(int anInt) {
           findOne(createQuery().filter('aInt >', anInt))
         }
-
       }
       null
     '''
@@ -107,12 +93,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testIncorrectOrderQueryShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(int anInt) {
@@ -122,7 +102,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
         A aQueryDesc(int anInt) {
           findOne(createQuery().order('-descAInt'))
         }
-
       }
       null
     '''
@@ -132,12 +111,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testIncorrectFieldArgsInUpdateOpsMethodCallsShouldFail() {
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         void setAnInt(A a, int anInt) {
@@ -207,12 +180,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testNonArrayFieldUsedForArrayUpdateShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         void addToAList(int anInt) {
@@ -242,12 +209,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testNonNumericFieldUsedForNumericUpdateShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         void decAnInt() {
@@ -273,13 +234,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
 
   void testIncorrectFieldArgsInDAOMethodCallsShouldFail(){
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.mongodb.morphia.Key
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         List<ObjectId> findAIds(int anInt) {
@@ -312,7 +266,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
   }
 
   void testEmbeddedArrayFieldQuery() {
-    assertScript '''
+    shell.evaluate '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
       import groovy.transform.CompileStatic
@@ -356,7 +310,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
   }
 
   void testEmbeddedBoundedWCCollectionFieldQuery() {
-    assertScript '''
+    shell.evaluate '''
       import org.mongodb.morphia.dao.BasicDAO
       import org.bson.types.ObjectId
       import groovy.transform.CompileStatic
@@ -391,13 +345,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
   }
 
   void testEmbeddedMapFieldQuery() {
-    assertScript '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+    shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedMapQuery(String embeddedAString) {
@@ -408,12 +356,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     '''
 
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedMapQuery(String embeddedAString) {
@@ -426,13 +368,7 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
   }
 
   void testEmbeddedBoundedWCMapFieldQuery() {
-    assertScript '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
+    shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedBoundedWCMapQuery(String embeddedAString) {
@@ -443,12 +379,6 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
     '''
 
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedBoundedWCMapQuery(String embeddedAString) {
@@ -458,6 +388,13 @@ class DAOTypeCheckingExtensionTest extends GroovyTestCase {
       null
     '''
     assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+  }
+
+  @Override
+  String shouldFail(String script) {
+    shouldFail {
+      shell.evaluate(script)
+    }
   }
 }
 
