@@ -41,6 +41,22 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
   }
 
+  void testNonConstantFieldArgsInQueryMethodCallsShouldNotFail() {
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(String aFieldName, int anInt) {
+          findOne(createQuery().field(aFieldName).equal(anInt))
+        }
+
+        A anInterpolatedQuery(String aFieldName, int anInt) {
+          findOne(createQuery().field("$aFieldName").equal(anInt))
+        }
+      }
+      null
+    '''
+  }
+
   void testEmbeddedFieldQuery(){
     shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
@@ -176,6 +192,22 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: removeFirstList for class: com.shils.morphia.A')
     assert message.contains('No such persisted field: removeLastList for class: com.shils.morphia.A')
     assert message.contains('No such persisted field: removeAllList for class: com.shils.morphia.A')
+  }
+
+  void testNonConstantFieldArgsInUpdateOpsMethodCallsShouldNotFail() {
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        void anUpdate(String aFieldName, int anInt) {
+          update(createQuery(), createUpdateOperations().set(aFieldName, anInt))
+        }
+
+        void anInterpolatedUpdate(String aFieldName, int anInt) {
+          update(createQuery(), createUpdateOperations().set("$aFieldName", anInt))
+        }
+      }
+      null
+    '''
   }
 
   void testNonArrayFieldUsedForArrayUpdateShouldFail(){
