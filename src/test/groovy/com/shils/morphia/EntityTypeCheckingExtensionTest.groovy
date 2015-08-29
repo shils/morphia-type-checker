@@ -85,7 +85,7 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
 
     message = shouldFail {
       shell.evaluate '''
-        @Indexes(@Index('aInt'))
+        @Indexes(@Index('-aInt'))
         @Entity
         class A {
           int anInt
@@ -108,7 +108,7 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
 
     message = shouldFail {
       shell.evaluate '''
-        @Indexes(@Index('anInt, anString'))
+        @Indexes(@Index('-anInt, anString'))
         @Entity
         class A {
           int anInt
