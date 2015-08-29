@@ -8,7 +8,8 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Entity
 import org.mongodb.morphia.annotations.Id
-import org.mongodb.morphia.annotations.Property;
+import org.mongodb.morphia.annotations.Property
+import org.mongodb.morphia.annotations.Transient;
 
 class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
@@ -422,6 +423,24 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
   }
 
+  void testTransientFieldQueriesShouldFail() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aTransientIntQuery(int anInt) {
+          findOne(createQuery().field('aTransientInt').equal(anInt))
+        }
+
+        A aMorphiaTransientIntQuery(int anInt) {
+          findOne(createQuery().field('aMorphiaTransientInt').equal(anInt))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aTransientInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aMorphiaTransientInt for class: com.shils.morphia.A')
+  }
+
   @Override
   String shouldFail(String script) {
     shouldFail {
@@ -435,6 +454,9 @@ class A {
   @Id
   ObjectId id
   int anInt
+  transient int aTransientInt
+  @Transient
+  int aMorphiaTransientInt
   @Property('aString')
   String aStringProperty
   B embedded
