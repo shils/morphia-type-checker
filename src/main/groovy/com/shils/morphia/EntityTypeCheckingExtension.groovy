@@ -78,10 +78,8 @@ class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   }
 
   private void validateFieldArguments(ConstantExpression argsExpression) {
-    String argsString = (CharSequence) argsExpression.value
-    if (argsString.charAt(0) == '-' )
-      argsString = argsString.substring(1)
-    List<String> fieldArguments = StringGroovyMethods.tokenize((CharSequence) argsString, ', ')
+    CharSequence argsString = (CharSequence) argsExpression.value
+    List<String> fieldArguments = StringGroovyMethods.tokenize(argsString, ', -')
     for (String arg: fieldArguments) {
       resolveFieldArgument(arg, argsExpression)
     }
