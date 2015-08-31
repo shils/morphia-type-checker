@@ -118,4 +118,34 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
     }
     assert message.contains('No such persisted field: anString for class: A')
   }
+
+  void testEntityWithInnerEnumShouldNotFail() {
+    shell.evaluate '''
+      @Entity
+      @Indexes(@Index('b'))
+      class A {
+        B b
+
+        enum B {
+          FOO, BAR
+        }
+      }
+      null
+    '''
+  }
+
+  void testEntityWithInnerStaticClassShouldNotFail() {
+    shell.evaluate '''
+      @Entity
+      @Indexes(@Index('b'))
+      class A {
+        B b
+
+        static class B {
+          int bInt
+        }
+      }
+      null
+    '''
+  }
 }

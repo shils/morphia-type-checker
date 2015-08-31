@@ -27,9 +27,11 @@ class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   static final ClassNode INDEXES_TYPE = ClassHelper.make(Indexes)
   static final ClassNode ENTITY_TYPE = ClassHelper.make(Entity)
 
+  private ClassNode entityType
+
   @Override
   ClassNode currentEntityType() {
-    return getEnclosingClassNode()
+    return entityType
   }
 
   @Override
@@ -37,7 +39,8 @@ class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     if (!isAnnotatedBy(classNode, ENTITY_TYPE))
       return
 
-    List<AnnotationNode> annotations = classNode.getAnnotations()
+    entityType = classNode
+    List<AnnotationNode> annotations = entityType.getAnnotations()
     for (AnnotationNode annotation: annotations) {
       if (INDEXES_TYPE.equals(annotation.classNode)) {
         validateIndexesAnnotation(annotation)
