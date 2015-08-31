@@ -441,6 +441,62 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aMorphiaTransientInt for class: com.shils.morphia.A')
   }
 
+  void testDisableValidationAwarenessInQueries() {
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aNonValidatedQuery(int anInt) {
+          findOne(createQuery().disableValidation().field('notValidated').equal(anInt))
+        }
+      }
+      null
+    '''
+  }
+
+  void testEnableValidationAwarenessInQueries() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aPartiallyValidatedQuery(int anInt, String aString) {
+          findOne(createQuery().disableValidation().field('notValidated').equal(anInt).
+                  enableValidation().field('validated').equal(aString)
+          )
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: validated for class: com.shils.morphia.A')
+    assert !message.contains('notValidated')
+  }
+
+  void testDisableValidationAwarenessInUpdateOps() {
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        void aNonValidatedUpdate(int anInt) {
+          update(createQuery(), createUpdateOperations().disableValidation().set('notValidated', anInt))
+        }
+      }
+      null
+    '''
+  }
+
+  void testEnableValidationAwarenessInUpdateOps() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        void aPartiallyValidatedUpdate(int anInt, String aString) {
+          update(createQuery(), createUpdateOperations().disableValidation().set('notValidated', anInt).
+                  enableValidation().set('validated', aString)
+          )
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: validated for class: com.shils.morphia.A')
+    assert !message.contains('notValidated')
+  }
+
   @Override
   String shouldFail(String script) {
     shouldFail {

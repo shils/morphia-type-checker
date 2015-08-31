@@ -3,6 +3,9 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import org.codehaus.groovy.ast.expr.ConstructorCallExpression
+import org.codehaus.groovy.ast.expr.MethodCallExpression
+import org.codehaus.groovy.ast.expr.StaticMethodCallExpression
 import org.codehaus.groovy.ast.expr.VariableExpression
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.ClassHelper
@@ -36,17 +39,23 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   @Override
   void afterMethodCall(MethodCall call) {
     ASTNode receiver = call.receiver
-    if (receiver instanceof Expression) {
-      if (receiver instanceof VariableExpression && receiver.isThisExpression()) {
-        validateDAOMethodCall(call)
-        return
-      }
-      ClassNode receiverType = ((Expression) receiver).type
-      if (implementsInterfaceOrIsSubclassOf(receiverType, QUERY_TYPE)) {
-        validateQueryMethodCall(call)
-      } else if (implementsInterfaceOrIsSubclassOf(receiverType, UPDATE_OPERATIONS_TYPE)) {
-        validateUpdateOpsMethodCall(call)
-      }
+    if (!receiver || !(receiver instanceof Expression) || call.methodAsString == 'enableValidation')
+      return
+
+    if (receiver.getNodeMetaData(ValidationMarker.DISABLED) || call.methodAsString == 'disableValidation') {
+      callAsExpression(call).putNodeMetaData(ValidationMarker.DISABLED, true)
+      return
+    }
+
+    if (receiver instanceof VariableExpression && receiver.isThisExpression()) {
+      validateDAOMethodCall(call)
+      return
+    }
+    ClassNode receiverType = getType(receiver)
+    if (implementsInterfaceOrIsSubclassOf(receiverType, QUERY_TYPE)) {
+      validateQueryMethodCall(call)
+    } else if (implementsInterfaceOrIsSubclassOf(receiverType, UPDATE_OPERATIONS_TYPE)) {
+      validateUpdateOpsMethodCall(call)
     }
   }
 
@@ -115,5 +124,20 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
       case 'findOne':
         resolveFieldArgument(argValue, fieldArgExpr)
     }
+  }
+
+  private static Expression callAsExpression(MethodCall call) {
+    if (call instanceof ConstructorCallExpression)
+      return (ConstructorCallExpression) call
+    else if (call instanceof MethodCallExpression)
+      return (MethodCallExpression) call
+    else if (call instanceof StaticMethodCallExpression)
+      return (StaticMethodCallExpression) call
+
+    return null
+  }
+
+  enum ValidationMarker {
+    DISABLED
   }
 }
