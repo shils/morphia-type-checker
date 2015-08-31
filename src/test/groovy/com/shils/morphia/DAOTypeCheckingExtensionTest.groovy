@@ -19,6 +19,11 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     def ic = new ImportCustomizer().addImports(
             'org.mongodb.morphia.dao.BasicDAO',
             'org.mongodb.morphia.Key',
+            'org.mongodb.morphia.query.Query',
+            'org.mongodb.morphia.query.QueryImpl',
+            'org.mongodb.morphia.query.UpdateOperations',
+            'org.mongodb.morphia.query.UpdateOpsImpl',
+            'org.mongodb.morphia.Datastore',
             'org.bson.types.ObjectId',
             'groovy.transform.CompileStatic',
             'com.shils.morphia.A',
@@ -495,6 +500,52 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
     assert message.contains('No such persisted field: validated for class: com.shils.morphia.A')
     assert !message.contains('notValidated')
+  }
+
+  void testValidationOfStaticMethodCalls() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(int anInt) {
+          findOne(createQueryStatic(getDatastore()).field('aInt').equal(anInt))
+        }
+
+        void anUpdate(String aString) {
+          update(createQuery(), createUpdateOpsStatic(getDatastore()).set('aStrin', aString))
+        }
+
+        static Query<A> createQueryStatic(Datastore ds) {
+          ds.createQuery(A.class)
+        }
+
+        static UpdateOperations<A> createUpdateOpsStatic(Datastore ds) {
+          ds.createUpdateOperations(A.class)
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.A')
+  }
+
+  void testValidationOfConstructorCalls() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(int anInt) {
+          Query query = new QueryImpl(A.class, getDatastore().getCollection(), getDatastore()).field('aInt').equal(anInt)
+          findOne(query)
+        }
+
+        void anUpdate(String aString) {
+          UpdateOperations ops = new UpdateOpsImpl(A.class, getDatastore().getMapper()).set('aStrin', aString)
+          update(createQuery(), ops)
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.A')
   }
 
   @Override
