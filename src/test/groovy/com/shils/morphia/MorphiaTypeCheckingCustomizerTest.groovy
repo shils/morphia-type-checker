@@ -123,4 +123,53 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       null
     '''
   }
+
+  void testNonTypeCheckedEntitiesAreNotModified() {
+    shell.evaluate '''
+      @Entity
+      @ASTTest(phase = CANONICALIZATION, value = {
+        assert node.annotations.size() == 2
+        assert node.annotations*.classNode == [ENTITY_TYPE, ClassHelper.make(ASTTest.class)]
+      })
+      class A {}
+      null
+    '''
+  }
+
+  void testNonTypeCheckedDAOsAreNotModified() {
+    shell.evaluate '''
+      @Entity
+      class A {}
+
+      @ASTTest(phase = CANONICALIZATION, value = { assert node.annotations*.classNode == [ClassHelper.make(ASTTest)] })
+      class ADao extends BasicDAO<A, ObjectId> {}
+      null
+    '''
+  }
+
+  void testNonMorphiaClassesAreNotModified() {
+    shell.evaluate '''
+      @ASTTest(phase = CANONICALIZATION, value = { assert node.annotations*.classNode == [ClassHelper.make(ASTTest)] })
+      class A {}
+      null
+    '''
+
+    shell.evaluate '''
+      @TypeChecked
+      @ASTTest(phase = CANONICALIZATION, value = {
+        assert !node.getAnnotations(TYPE_CHECKED_TYPE).first().getMember('extensions')
+      })
+      class A {}
+      null
+    '''
+
+    shell.evaluate '''
+      @CompileStatic
+      @ASTTest(phase = CANONICALIZATION, value = {
+        assert !node.getAnnotations(COMPILE_STATIC_TYPE).first().getMember('extensions')
+      })
+      class A {}
+      null
+    '''
+  }
 }
