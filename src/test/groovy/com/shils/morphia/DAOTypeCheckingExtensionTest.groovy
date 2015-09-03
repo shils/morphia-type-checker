@@ -305,12 +305,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
   void testEmbeddedArrayFieldQuery() {
     shell.evaluate '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedArrayQuery(String embeddedAString) {
@@ -325,12 +319,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
 
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedArrayQuery(String embeddedAString) {
@@ -349,12 +337,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
   void testEmbeddedBoundedWCCollectionFieldQuery() {
     shell.evaluate '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedBoundedWCCollectionQuery(String embeddedAString) {
@@ -365,12 +347,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
 
     def message = shouldFail '''
-      import org.mongodb.morphia.dao.BasicDAO
-      import org.bson.types.ObjectId
-      import groovy.transform.CompileStatic
-      import com.shils.morphia.A
-
-      @CompileStatic(extensions = ['com.shils.morphia.DAOTypeCheckingExtension'])
       class ADao extends BasicDAO<A, ObjectId> {
 
         A anEmbeddedBoundedWCCollectionQuery(String embeddedAString) {
