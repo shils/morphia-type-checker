@@ -225,7 +225,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
         }
 
         void addAllToAList(List<Integer> aList) {
-          update(createQuery(), createUpdateOperations().addAll('anInt', aList))
+          update(createQuery(), createUpdateOperations().addAll('anInt', aList, false))
         }
 
         void removeFirstFromAList() {
@@ -243,6 +243,34 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       null
     '''
     assert message.contains('anInt does not refer to an array field')
+  }
+
+  void testArrayFieldUsedForArrayUpdateShouldNotFail(){
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        void addToEmbeddedArray(B b) {
+          update(createQuery(), createUpdateOperations().add('embeddedArray', b))
+        }
+
+        void addAllToEmbeddedCollection(List<B> bList) {
+          update(createQuery(), createUpdateOperations().addAll('embeddedCollection', bList, false))
+        }
+
+        void removeFirstFromEmbeddedArray() {
+          update(createQuery(), createUpdateOperations().removeFirst('embeddedArray'))
+        }
+
+        void removeLastFromEmbeddedArray() {
+          update(createQuery(), createUpdateOperations().removeLast('embeddedArray'))
+        }
+
+        void removeAllFromEmbeddedCollection(B b) {
+          update(createQuery(), createUpdateOperations().removeAll('embeddedCollection', b))
+        }
+      }
+      null
+    '''
   }
 
   void testNonNumericFieldUsedForNumericUpdateShouldFail(){
@@ -522,6 +550,18 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
     assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
     assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.A')
+  }
+
+  void testMongoIdFieldIsResolvedCorrectly() {
+    shell.evaluate '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(ObjectId oId) {
+          findOne(createQuery().field('_id').equal(oId))
+        }
+      }
+      null
+    '''
   }
 
   @Override

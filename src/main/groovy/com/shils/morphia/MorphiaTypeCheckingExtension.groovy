@@ -2,6 +2,7 @@ package com.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import org.bson.types.ObjectId
 import org.codehaus.groovy.ast.GenericsType
 import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Serialized
@@ -33,22 +34,33 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
   static final ClassNode REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference)
   static final ClassNode SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
   static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
+  static final ClassNode OBJECT_ID_TYPE = ClassHelper.make(ObjectId.class)
 
   static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
+  static final String MONGO_ID_FIELD_NAME = '_id'
 
   abstract ClassNode currentEntityType()
 
-  FieldNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    String[] fieldNames = fieldArgument.split('\\.')
+  /**
+   * Resolves a chain of field accesses and returns the type of the result
+   * @param fieldArgument the field access chain String
+   * @param argumentNode the ASTNode representing the field access chain String
+   * @return the type of the result of the chain of field accesses
+   */
+  ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
     ClassNode ownerType = currentEntityType()
-    FieldNode field = null
-    for (String fieldName: fieldNames) {
-      if (field && implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
-        field = null
-        continue
-      }
+    String[] fieldNames = fieldArgument.split('\\.')
+    int index = 0
+    if (MONGO_ID_FIELD_NAME == fieldNames[0] && !ownerType.getField(MONGO_ID_FIELD_NAME)) {
+      ownerType = OBJECT_ID_TYPE
+      index++
+    }
 
+    FieldNode field = null
+    while (index < fieldNames.length) {
+      String fieldName = fieldNames[index++]
       field = ownerType.getField(fieldName) ?: findFieldByOverridingName(ownerType, fieldName)
+
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
         return null
@@ -58,23 +70,25 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
         ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 0) : ClassHelper.OBJECT_TYPE
       } else if (implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
         ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 1) : ClassHelper.OBJECT_TYPE
+        index++
       } else {
         ownerType = field.type
       }
     }
-    return field
+    //hack for '_id' field arguments, where the variable 'field' doesn't refer to a real field, but its type is known
+    return field?.type ?: ownerType
   }
 
   void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
-    if (field && !implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE) && !field.type.isArray()){
+    ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
+    if (fieldType && !implementsInterfaceOrIsSubclassOf(fieldType, COLLECTION_TYPE) && !fieldType.isArray()){
       addStaticTypeError("$fieldArgument does not refer to an array field", argumentNode)
     }
   }
 
   void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    FieldNode field = resolveFieldArgument(fieldArgument, argumentNode)
-    if (field && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(field.type), ClassHelper.Number_TYPE)){
+    ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
+    if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
       addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
     }
   }
