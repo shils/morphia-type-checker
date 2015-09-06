@@ -1,4 +1,4 @@
-package com.shils.morphia
+package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import org.bson.types.ObjectId
@@ -26,10 +26,10 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
             'org.mongodb.morphia.Datastore',
             'org.bson.types.ObjectId',
             'groovy.transform.CompileStatic',
-            'com.shils.morphia.A',
-            'com.shils.morphia.B'
+            'me.shils.morphia.A',
+            'me.shils.morphia.B'
     )
-    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['com.shils.morphia.DAOTypeCheckingExtension'])
+    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['me.shils.morphia.DAOTypeCheckingExtension'])
     config.addCompilationCustomizers(ic, asttc)
     new GroovyShell(config)
   }
@@ -44,7 +44,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
   void testNonConstantFieldArgsInQueryMethodCallsShouldNotFail() {
@@ -110,7 +110,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
   void testIncorrectOrderQueryShouldFail(){
@@ -127,8 +127,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: descAInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: descAInt for class: me.shils.morphia.A')
   }
 
   void testIncorrectFieldArgsInUpdateOpsMethodCallsShouldFail() {
@@ -186,18 +186,18 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: setInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: setOnInsertInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: unsetInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: decInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: incInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: maxInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: minInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: addList for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: addAllList for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: removeFirstList for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: removeLastList for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: removeAllList for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: setInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: setOnInsertInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: unsetInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: decInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: incInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: maxInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: minInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: addList for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: addAllList for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: removeFirstList for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: removeLastList for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: removeAllList for class: me.shils.morphia.A')
   }
 
   void testNonConstantFieldArgsInUpdateOpsMethodCallsShouldNotFail() {
@@ -324,11 +324,11 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: findAIds for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: findOneAId for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: existsA for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: countA for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: findOneA for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: findAIds for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: findOneAId for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: existsA for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: countA for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: findOneA for class: me.shils.morphia.A')
   }
 
   void testEmbeddedArrayFieldQuery() {
@@ -359,8 +359,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: arrayString for class: com.shils.morphia.B')
-    assert message.contains('No such persisted field: collectionString for class: com.shils.morphia.B')
+    assert message.contains('No such persisted field: arrayString for class: me.shils.morphia.B')
+    assert message.contains('No such persisted field: collectionString for class: me.shils.morphia.B')
   }
 
   void testEmbeddedBoundedWCCollectionFieldQuery() {
@@ -383,7 +383,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.B')
   }
 
   void testEmbeddedMapFieldQuery() {
@@ -406,7 +406,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.B')
   }
 
   void testEmbeddedBoundedWCMapFieldQuery() {
@@ -429,7 +429,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.B')
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.B')
   }
 
   void testTransientFieldQueriesShouldFail() {
@@ -446,8 +446,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aTransientInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: aMorphiaTransientInt for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aTransientInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: aMorphiaTransientInt for class: me.shils.morphia.A')
   }
 
   void testDisableValidationAwarenessInQueries() {
@@ -474,7 +474,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: validated for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: validated for class: me.shils.morphia.A')
     assert !message.contains('notValidated')
   }
 
@@ -502,7 +502,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: validated for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: validated for class: me.shils.morphia.A')
     assert !message.contains('notValidated')
   }
 
@@ -528,8 +528,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
   void testValidationOfConstructorCalls() {
@@ -548,8 +548,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: com.shils.morphia.A')
-    assert message.contains('No such persisted field: aStrin for class: com.shils.morphia.A')
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
   void testMongoIdFieldIsResolvedCorrectly() {

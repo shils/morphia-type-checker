@@ -1,4 +1,4 @@
-package com.shils.morphia
+package me.shils.morphia
 
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ImportCustomizer
@@ -19,7 +19,7 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
             'org.bson.types.ObjectId',
             'org.mongodb.morphia.dao.BasicDAO'
     )
-    ic.addStaticStars('org.codehaus.groovy.control.CompilePhase', 'com.shils.morphia.MorphiaTypeCheckingCustomizer')
+    ic.addStaticStars('org.codehaus.groovy.control.CompilePhase', 'me.shils.morphia.MorphiaTypeCheckingCustomizer')
     config.addCompilationCustomizers(ic, new MorphiaTypeCheckingCustomizer())
     new GroovyShell(config)
   }
@@ -30,7 +30,7 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       @TypeChecked
       @ASTTest(phase = CANONICALIZATION, value = {
         def extensionsExpr = node.getAnnotations(TYPE_CHECKED_TYPE).first().getMember('extensions').expressions.first()
-        assert extensionsExpr.value == 'com.shils.morphia.EntityTypeCheckingExtension'
+        assert extensionsExpr.value == 'me.shils.morphia.EntityTypeCheckingExtension'
       })
       class A {}
       null
@@ -53,7 +53,7 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       @CompileStatic
       @ASTTest(phase = CANONICALIZATION, value = {
         def extensionsExpr = node.getAnnotations(COMPILE_STATIC_TYPE).first().getMember('extensions').expressions.first()
-        assert extensionsExpr.value == 'com.shils.morphia.EntityTypeCheckingExtension'
+        assert extensionsExpr.value == 'me.shils.morphia.EntityTypeCheckingExtension'
       })
       class A {}
       null
@@ -78,7 +78,7 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       @TypeChecked
       @ASTTest(phase = CANONICALIZATION, value = {
         def extensionsExpr = node.getAnnotations(TYPE_CHECKED_TYPE).first().getMember('extensions').expressions.first()
-        assert extensionsExpr.value == 'com.shils.morphia.DAOTypeCheckingExtension'
+        assert extensionsExpr.value == 'me.shils.morphia.DAOTypeCheckingExtension'
       })
       class ADao extends BasicDAO<A, ObjectId> {}
       null
@@ -105,7 +105,7 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       @CompileStatic
       @ASTTest(phase = CANONICALIZATION, value = {
         def extensionsExpr = node.getAnnotations(COMPILE_STATIC_TYPE).first().getMember('extensions').expressions.first()
-        assert extensionsExpr.value == 'com.shils.morphia.DAOTypeCheckingExtension'
+        assert extensionsExpr.value == 'me.shils.morphia.DAOTypeCheckingExtension'
       })
       class ADao extends BasicDAO<A, ObjectId> {}
       null

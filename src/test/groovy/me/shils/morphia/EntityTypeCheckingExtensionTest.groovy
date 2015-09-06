@@ -18,7 +18,7 @@ class EntityTypeCheckingExtensionTest extends GroovyShellTestCase {
             'org.mongodb.morphia.annotations.Field',
             'groovy.transform.CompileStatic',
     )
-    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['com.shils.morphia.EntityTypeCheckingExtension'])
+    def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['me.shils.morphia.EntityTypeCheckingExtension'])
     config.addCompilationCustomizers(ic, asttc)
     new GroovyShell(config)
   }

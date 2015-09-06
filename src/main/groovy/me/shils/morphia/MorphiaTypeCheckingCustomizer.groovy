@@ -1,4 +1,4 @@
-package com.shils.morphia
+package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.TypeChecked

@@ -1,4 +1,4 @@
-package com.shils.morphia
+package me.shils.morphia
 
 
 class MorphiaTypeCheckingExtensionTest extends GroovyTestCase {
@@ -13,7 +13,7 @@ class MorphiaTypeCheckingExtensionTest extends GroovyTestCase {
       import org.codehaus.groovy.control.CompilePhase
       import groovy.transform.CompileStatic
       import groovy.transform.ASTTest
-      import com.shils.morphia.MorphiaTypeCheckingExtension
+      import me.shils.morphia.MorphiaTypeCheckingExtension
 
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
         assert MorphiaTypeCheckingExtension.findFieldByOverridingName(node, 'embeddedOverride') == node.getField('embedded')
