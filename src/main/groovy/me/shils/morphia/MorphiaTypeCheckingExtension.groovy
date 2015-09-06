@@ -26,19 +26,11 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
  */
 @InheritConstructors
 @CompileStatic
-abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
+abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension {
 
-  static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
-  static final ClassNode EMBEDDED_TYPE = ClassHelper.make(Embedded.class)
-  static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
-  static final ClassNode REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference)
-  static final ClassNode SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
   static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
-  static final ClassNode OBJECT_ID_TYPE = ClassHelper.make(ObjectId.class)
 
-  static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
-  static final ClassNode[] CANNOT_QUERY_PAST_TYPES = [REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
-  static final String MONGO_ID_FIELD_NAME = '_id'
+  protected MorphiaFieldAccessResolver fieldAccessResolver = new MorphiaFieldAccessResolver()
 
   abstract ClassNode currentEntityType()
 
@@ -49,45 +41,12 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    * @return the type of the result of the chain of field accesses, or null if there is a validation error
    */
   ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    ClassNode ownerType = currentEntityType()
-    String[] fieldNames = fieldArgument.split('\\.')
-    int index = 0
-    if (MONGO_ID_FIELD_NAME == fieldNames[0] && !ownerType.getField(MONGO_ID_FIELD_NAME)) {
-      ownerType = OBJECT_ID_TYPE
-      index++
+    List<String> errorMessages = []
+    ClassNode resultType = fieldAccessResolver.resolve(currentEntityType(), fieldArgument, errorMessages)
+    for (String msg: errorMessages) {
+      addStaticTypeError(msg, argumentNode)
     }
-
-    FieldNode field = null
-    ClassNode previousOwnerType = null
-    while (index < fieldNames.length) {
-      AnnotationNode cannotQueryPastAnnotation = field?.getAnnotations()?.find { CANNOT_QUERY_PAST_TYPES.contains(it.classNode) }
-      if (cannotQueryPastAnnotation) {
-        addStaticTypeError("Cannot access fields of ${previousOwnerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString(), argumentNode)
-        return null
-      }
-
-      String fieldName = fieldNames[index++]
-      field = ownerType.getField(fieldName) ?: findFieldByOverridingName(ownerType, fieldName)
-
-      if (!field || field.isStatic() || isFieldTransient(field)) {
-        addNoPersistedFieldError(fieldName, ownerType, argumentNode)
-        return null
-      }
-
-      previousOwnerType = ownerType
-      if (field.type.isArray()) {
-        ownerType = field.type.componentType
-      } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
-        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 0) : ClassHelper.OBJECT_TYPE
-      } else if (implementsInterfaceOrIsSubclassOf(field.type, ClassHelper.MAP_TYPE)) {
-        ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 1) : ClassHelper.OBJECT_TYPE
-        index++
-      } else {
-        ownerType = field.type
-      }
-    }
-    //hack for '_id' field arguments, where the variable 'field' doesn't refer to a real field, but its type is known
-    return field?.type ?: ownerType
+    return resultType
   }
 
   void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
@@ -102,28 +61,5 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
       addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
     }
-  }
-
-  void addNoPersistedFieldError(String fieldName, ClassNode ownerType, ASTNode errorNode) {
-    addStaticTypeError("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString(), errorNode)
-  }
-
-  static FieldNode findFieldByOverridingName(ClassNode ownerType, String overridingName) {
-    return ownerType.fields.find { field ->
-      AnnotationNode anno = field.getAnnotations().find {
-        NAME_OVERRIDING_TYPES.contains(it.classNode)
-      }
-      Expression expr = anno?.getMember('value')
-      (expr instanceof ConstantExpression) && ((ConstantExpression) expr).value == overridingName
-    }
-  }
-
-  static boolean isFieldTransient(FieldNode field) {
-    return field.modifiers & ACC_TRANSIENT || field.getAnnotations(TRANSIENT_TYPE)
-  }
-
-  static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
-    GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
-    return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type
   }
 }

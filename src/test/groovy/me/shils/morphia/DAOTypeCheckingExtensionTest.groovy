@@ -576,7 +576,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @${DAOTypeCheckingExtension.SERIALIZED_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @${MorphiaFieldAccessResolver.SERIALIZED_TYPE.name}".toString())
   }
 
   void testQueryingPastReferenceFieldsShouldFail() {
@@ -589,7 +589,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @${DAOTypeCheckingExtension.REFERENCE_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @${MorphiaFieldAccessResolver.REFERENCE_TYPE.name}".toString())
   }
 
   @Override
