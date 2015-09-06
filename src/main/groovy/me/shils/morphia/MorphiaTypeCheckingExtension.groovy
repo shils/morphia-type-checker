@@ -37,6 +37,7 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
   static final ClassNode OBJECT_ID_TYPE = ClassHelper.make(ObjectId.class)
 
   static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
+  static final ClassNode[] CANNOT_QUERY_PAST_TYPES = [REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
   static final String MONGO_ID_FIELD_NAME = '_id'
 
   abstract ClassNode currentEntityType()
@@ -45,7 +46,7 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    * Resolves a chain of field accesses and returns the type of the result
    * @param fieldArgument the field access chain String
    * @param argumentNode the ASTNode representing the field access chain String
-   * @return the type of the result of the chain of field accesses
+   * @return the type of the result of the chain of field accesses, or null if there is a validation error
    */
   ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
     ClassNode ownerType = currentEntityType()
@@ -57,14 +58,24 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     }
 
     FieldNode field = null
+    ClassNode previousOwnerType = null
     while (index < fieldNames.length) {
+      AnnotationNode cannotQueryPastAnnotation = field?.getAnnotations()?.find { CANNOT_QUERY_PAST_TYPES.contains(it.classNode) }
+      if (cannotQueryPastAnnotation) {
+        addStaticTypeError("Cannot access fields of ${previousOwnerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString(), argumentNode)
+        return null
+      }
+
       String fieldName = fieldNames[index++]
       field = ownerType.getField(fieldName) ?: findFieldByOverridingName(ownerType, fieldName)
 
       if (!field || field.isStatic() || isFieldTransient(field)) {
         addNoPersistedFieldError(fieldName, ownerType, argumentNode)
         return null
-      } else if (field.type.isArray()) {
+      }
+
+      previousOwnerType = ownerType
+      if (field.type.isArray()) {
         ownerType = field.type.componentType
       } else if (implementsInterfaceOrIsSubclassOf(field.type, COLLECTION_TYPE)) {
         ownerType = field.type.usingGenerics ? extractGenericUpperBoundOrType(field.type, 0) : ClassHelper.OBJECT_TYPE

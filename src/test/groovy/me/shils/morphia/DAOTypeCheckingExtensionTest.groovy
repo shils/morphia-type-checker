@@ -9,7 +9,9 @@ import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Entity
 import org.mongodb.morphia.annotations.Id
 import org.mongodb.morphia.annotations.Property
+import org.mongodb.morphia.annotations.Serialized
 import org.mongodb.morphia.annotations.Transient;
+import org.mongodb.morphia.annotations.Reference as MorphiaReference
 
 class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
@@ -564,6 +566,32 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
   }
 
+  void testQueryingPastSerializedFieldsShouldFail() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aSerializedQuery(String serializedAString) {
+          findOne(createQuery().field('serialized.aString').equal(serializedAString))
+        }
+      }
+      null
+    '''
+    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @${DAOTypeCheckingExtension.SERIALIZED_TYPE.name}".toString())
+  }
+
+  void testQueryingPastReferenceFieldsShouldFail() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aReferenceQuery(String referenceAString) {
+          findOne(createQuery().field('reference.aString').equal(referenceAString))
+        }
+      }
+      null
+    '''
+    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @${DAOTypeCheckingExtension.REFERENCE_TYPE.name}".toString())
+  }
+
   @Override
   String shouldFail(String script) {
     shouldFail {
@@ -576,18 +604,27 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 class A {
   @Id
   ObjectId id
+
   int anInt
   transient int aTransientInt
   @Transient
   int aMorphiaTransientInt
+
   @Property('aString')
   String aStringProperty
+
   B embedded
   B[] embeddedArray
   Collection<B> embeddedCollection
   Collection<? extends B> embeddedBoundedWCCollection
   Map<String, B> embeddedMap
   Map<String, ? extends B> embeddedBoundedWCMap
+
+  @MorphiaReference
+  C reference
+
+  @Serialized
+  D serialized
 }
 
 @Embedded
@@ -595,4 +632,15 @@ class B {
   String aString
   @Property('anotherInt')
   int anotherIntProperty
+}
+
+@Entity
+class C {
+  @Id
+  ObjectId id
+  String aString
+}
+
+class D implements Serializable {
+  String aString
 }
