@@ -35,15 +35,15 @@ class MorphiaFieldAccessResolver implements Opcodes {
   static final String MONGO_ID_FIELD_NAME = '_id'
 
   /**
-   * Resolves a chain of field accesses and returns the type of the result
-   * @param entityType the classNode from which to begin resolving field accesses from
-   * @param accessChain the field access chain String
-   * @param errorMessages the list to which any resulting error messages should be added
-   * @return the type of the result of the chain of field accesses, or null if there is a validation error
+   * Resolves a mongo style field query and returns a FieldQueryResult containing the type of the result if it is able
+   * to be resolved, and an error message otherwise.
+   * @param entityType the classNode from which to begin resolving the query from
+   * @param queryString the mongo style query String
+   * @return a FieldQueryResult containing the type of the result if it is able to be resolved, and an error message otherwise.
    */
-  ClassNode resolve(ClassNode entityType, String accessChain, List<String> errorMessages) {
+  FieldQueryResult resolve(ClassNode entityType, String queryString) {
     ClassNode ownerType = entityType
-    String[] fieldNames = accessChain.split('\\.')
+    String[] fieldNames = queryString.split('\\.')
     int index = 0
     if (MONGO_ID_FIELD_NAME == fieldNames[0] && !ownerType.getField(MONGO_ID_FIELD_NAME)) {
       ownerType = OBJECT_ID_TYPE
@@ -55,16 +55,14 @@ class MorphiaFieldAccessResolver implements Opcodes {
     while (index < fieldNames.length) {
       AnnotationNode cannotQueryPastAnnotation = field?.getAnnotations()?.find { CANNOT_QUERY_PAST_TYPES.contains(it.classNode) }
       if (cannotQueryPastAnnotation) {
-        errorMessages.add("Cannot access fields of ${previousOwnerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString())
-        return null
+        return cannotQueryPastResult(field, previousOwnerType, cannotQueryPastAnnotation)
       }
 
       String fieldName = fieldNames[index++]
       field = ownerType.getField(fieldName) ?: findFieldByOverridingName(ownerType, fieldName)
 
       if (!field || field.isStatic() || isFieldTransient(field)) {
-        errorMessages.add(noPersistedFieldErrorMessage(fieldName, ownerType))
-        return null
+        return noPersistedFieldResult(fieldName, ownerType)
       }
 
       previousOwnerType = ownerType
@@ -80,11 +78,7 @@ class MorphiaFieldAccessResolver implements Opcodes {
       }
     }
     //hack for '_id' field arguments, where the variable 'field' doesn't refer to a real field, but its type is known
-    return field?.type ?: ownerType
-  }
-
-  static String noPersistedFieldErrorMessage(String fieldName, ClassNode ownerType) {
-    "No such persisted field: $fieldName for class: ${ownerType.getName()}".toString()
+    return new FieldQueryResult(type: field?.type ?: ownerType)
   }
 
   static FieldNode findFieldByOverridingName(ClassNode ownerType, String overridingName) {
@@ -104,5 +98,18 @@ class MorphiaFieldAccessResolver implements Opcodes {
   static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
     GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
     return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type
+  }
+
+  static FieldQueryResult noPersistedFieldResult(String fieldName, ClassNode ownerType) {
+    return new FieldQueryResult(error: "No such persisted field: $fieldName for class: ${ownerType.getName()}".toString())
+  }
+
+  static FieldQueryResult cannotQueryPastResult(FieldNode field, ClassNode ownerType, AnnotationNode cannotQueryPastAnnotation) {
+    return new FieldQueryResult(error: "Cannot access fields of ${ownerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString())
+  }
+
+  static class FieldQueryResult {
+    ClassNode type
+    String error
   }
 }

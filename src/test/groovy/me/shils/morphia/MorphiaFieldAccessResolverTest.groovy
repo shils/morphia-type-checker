@@ -1,7 +1,12 @@
 package me.shils.morphia
 
+import org.bson.types.ObjectId
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ImportCustomizer
+import org.mongodb.morphia.annotations.Embedded
+import org.mongodb.morphia.annotations.Entity
+import org.mongodb.morphia.annotations.Id
+import org.mongodb.morphia.annotations.Property
 
 class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
 
@@ -16,7 +21,10 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
             'org.codehaus.groovy.control.CompilePhase',
             'groovy.transform.CompileStatic',
             'groovy.transform.ASTTest',
-            'me.shils.morphia.MorphiaFieldAccessResolver'
+            'me.shils.morphia.MorphiaFieldAccessResolver',
+            'me.shils.morphia.EmbeddedClass',
+            'me.shils.morphia.ReferencedClass',
+            'me.shils.morphia.SerializableClass'
     ).addImport('MorphiaReference', 'org.mongodb.morphia.annotations.Reference')
     config.addCompilationCustomizers(ic)
     new GroovyShell(config)
@@ -55,10 +63,60 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
     '''
   }
 
+  void testQueryingPastSerializedFieldsError() {
+    shell.evaluate '''
+      @ASTTest(phase = INSTRUCTION_SELECTION, value = {
+        def result = new MorphiaFieldAccessResolver().resolve(node, 'serializableClass.aString')
+        assert !result.type
+        assert result.error == 'Cannot access fields of A.serializableClass since it is annotated with @org.mongodb.morphia.annotations.Serialized'
+      })
+      @CompileStatic
+      class A {
+        @Serialized
+        SerializableClass serializableClass
+      }
+      null
+    '''
+  }
+
+  void testQueryingPastReferenceFieldsError() {
+    shell.evaluate '''
+      @ASTTest(phase = INSTRUCTION_SELECTION, value = {
+        def result = new MorphiaFieldAccessResolver().resolve(node, 'referencedClass.aString')
+        assert !result.type
+        assert result.error == 'Cannot access fields of A.referencedClass since it is annotated with @org.mongodb.morphia.annotations.Reference'
+      })
+      @CompileStatic
+      class A {
+        @MorphiaReference
+        ReferencedClass referencedClass
+      }
+      null
+    '''
+  }
+
   @Override
   String shouldFail(String script) {
     shouldFail {
       shell.evaluate(script)
     }
   }
+}
+
+@Embedded
+class EmbeddedClass {
+  String aString
+  @Property('anotherInt')
+  int anotherIntProperty
+}
+
+@Entity
+class ReferencedClass {
+  @Id
+  ObjectId id
+  String aString
+}
+
+class SerializableClass implements Serializable {
+  String aString
 }

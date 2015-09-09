@@ -2,21 +2,11 @@ package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
-import org.bson.types.ObjectId
-import org.codehaus.groovy.ast.GenericsType
-import org.mongodb.morphia.annotations.Embedded
-import org.mongodb.morphia.annotations.Serialized
-import org.objectweb.asm.Opcodes
 import org.codehaus.groovy.ast.ASTNode
-import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
-import org.codehaus.groovy.ast.FieldNode
-import org.codehaus.groovy.ast.expr.ConstantExpression
-import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
-import org.mongodb.morphia.annotations.Property
-import org.mongodb.morphia.annotations.Transient
+import me.shils.morphia.MorphiaFieldAccessResolver.FieldQueryResult
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
@@ -41,12 +31,11 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    * @return the type of the result of the chain of field accesses, or null if there is a validation error
    */
   ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    List<String> errorMessages = []
-    ClassNode resultType = fieldAccessResolver.resolve(currentEntityType(), fieldArgument, errorMessages)
-    for (String msg: errorMessages) {
-      addStaticTypeError(msg, argumentNode)
+    FieldQueryResult result = fieldAccessResolver.resolve(currentEntityType(), fieldArgument)
+    if (result.error) {
+      addStaticTypeError(result.error, argumentNode)
     }
-    return resultType
+    return result.type
   }
 
   void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
