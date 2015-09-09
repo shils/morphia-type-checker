@@ -6,7 +6,7 @@ import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
-import me.shils.morphia.MorphiaFieldAccessResolver.FieldQueryResult
+import me.shils.morphia.MorphiaFieldQueryResolver.FieldQueryResult
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
@@ -20,35 +20,35 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
 
   static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
 
-  protected MorphiaFieldAccessResolver fieldAccessResolver = new MorphiaFieldAccessResolver()
+  protected MorphiaFieldQueryResolver fieldQueryResolver = new MorphiaFieldQueryResolver()
 
   abstract ClassNode currentEntityType()
 
   /**
-   * Resolves a chain of field accesses and returns the type of the result
-   * @param fieldArgument the field access chain String
-   * @param argumentNode the ASTNode representing the field access chain String
-   * @return the type of the result of the chain of field accesses, or null if there is a validation error
+   * Resolves a mongo style field query and returns the type of the result
+   * @param queryString the mongo style query String
+   * @param argumentNode the ASTNode representing the query String
+   * @return the type of the field query result, or null if there is a validation error
    */
-  ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    FieldQueryResult result = fieldAccessResolver.resolve(currentEntityType(), fieldArgument)
+  ClassNode resolveFieldQuery(String queryString, ASTNode argumentNode) {
+    FieldQueryResult result = fieldQueryResolver.resolve(currentEntityType(), queryString)
     if (result.error) {
       addStaticTypeError(result.error, argumentNode)
     }
     return result.type
   }
 
-  void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
+  void validateArrayFieldQuery(String queryString, ASTNode argumentNode) {
+    ClassNode fieldType = resolveFieldQuery(queryString, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(fieldType, COLLECTION_TYPE) && !fieldType.isArray()){
-      addStaticTypeError("$fieldArgument does not refer to an array field", argumentNode)
+      addStaticTypeError("$queryString does not refer to an array field", argumentNode)
     }
   }
 
-  void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
+  void validateNumericFieldQuery(String queryString, ASTNode argumentNode) {
+    ClassNode fieldType = resolveFieldQuery(queryString, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
-      addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
+      addStaticTypeError("$queryString does not refer to a numeric field", argumentNode)
     }
   }
 }

@@ -74,14 +74,14 @@ class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
 
   private void validateFieldAnnotation(AnnotationNode fieldAnnotationNode) {
     ConstantExpression member = (ConstantExpression) fieldAnnotationNode.getMember('value')
-    resolveFieldArgument((String) member.value, member)
+    resolveFieldQuery((String) member.value, member)
   }
 
   private void validateFieldArguments(ConstantExpression argsExpression) {
     CharSequence argsString = (CharSequence) argsExpression.value
     List<String> fieldArguments = StringGroovyMethods.tokenize(argsString, ', -')
     for (String arg: fieldArguments) {
-      resolveFieldArgument(arg, argsExpression)
+      resolveFieldQuery(arg, argsExpression)
     }
   }
 

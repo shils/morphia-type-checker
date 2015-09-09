@@ -67,13 +67,13 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     String argValue = (String) ((ConstantExpression) fieldArgExpr).value
     switch (call.methodAsString) {
       case 'field':
-        resolveFieldArgument(argValue, fieldArgExpr)
+        resolveFieldQuery(argValue, fieldArgExpr)
         break
       case 'filter':
-        resolveFieldArgument(argValue.split(' ').first(), fieldArgExpr)
+        resolveFieldQuery(argValue.split(' ').first(), fieldArgExpr)
         break
       case 'order':
-        resolveFieldArgument(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
+        resolveFieldQuery(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
         break
     }
   }
@@ -88,20 +88,20 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
       case 'set':
       case 'setOnInsert':
       case 'unset':
-        resolveFieldArgument(argValue, fieldArgExpr)
+        resolveFieldQuery(argValue, fieldArgExpr)
         break
       case 'add':
       case 'addAll':
       case 'removeFirst':
       case 'removeLast':
       case 'removeAll':
-        validateArrayFieldArgument(argValue, fieldArgExpr)
+        validateArrayFieldQuery(argValue, fieldArgExpr)
         break
       case 'dec':
       case 'inc':
       case 'max':
       case 'min':
-        validateNumericFieldArgument(argValue, fieldArgExpr)
+        validateNumericFieldQuery(argValue, fieldArgExpr)
         break
     }
   }
@@ -122,7 +122,7 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
       case 'exists':
       case 'count':
       case 'findOne':
-        resolveFieldArgument(argValue, fieldArgExpr)
+        resolveFieldQuery(argValue, fieldArgExpr)
     }
   }
 

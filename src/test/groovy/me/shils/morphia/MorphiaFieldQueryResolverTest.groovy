@@ -8,7 +8,7 @@ import org.mongodb.morphia.annotations.Entity
 import org.mongodb.morphia.annotations.Id
 import org.mongodb.morphia.annotations.Property
 
-class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
+class MorphiaFieldQueryResolverTest extends GroovyShellTestCase {
 
   @Override
   GroovyShell createNewShell() {
@@ -21,7 +21,7 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
             'org.codehaus.groovy.control.CompilePhase',
             'groovy.transform.CompileStatic',
             'groovy.transform.ASTTest',
-            'me.shils.morphia.MorphiaFieldAccessResolver',
+            'me.shils.morphia.MorphiaFieldQueryResolver',
             'me.shils.morphia.EmbeddedClass',
             'me.shils.morphia.ReferencedClass',
             'me.shils.morphia.SerializableClass'
@@ -33,10 +33,10 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
   void testFindFieldByOverridingName() {
     shell.evaluate '''
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
-        assert MorphiaFieldAccessResolver.findFieldByOverridingName(node, 'embeddedOverride') == node.getField('embedded')
-        assert MorphiaFieldAccessResolver.findFieldByOverridingName(node, 'propertyOverride') == node.getField('property')
-        assert MorphiaFieldAccessResolver.findFieldByOverridingName(node, 'referenceOverride') == node.getField('reference')
-        assert MorphiaFieldAccessResolver.findFieldByOverridingName(node, 'serializedOverride') == node.getField('serialized')
+        assert MorphiaFieldQueryResolver.findFieldByOverridingName(node, 'embeddedOverride') == node.getField('embedded')
+        assert MorphiaFieldQueryResolver.findFieldByOverridingName(node, 'propertyOverride') == node.getField('property')
+        assert MorphiaFieldQueryResolver.findFieldByOverridingName(node, 'referenceOverride') == node.getField('reference')
+        assert MorphiaFieldQueryResolver.findFieldByOverridingName(node, 'serializedOverride') == node.getField('serialized')
       })
       @Entity
       @CompileStatic
@@ -66,7 +66,7 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
   void testQueryingPastSerializedFieldsError() {
     shell.evaluate '''
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
-        def result = new MorphiaFieldAccessResolver().resolve(node, 'serializableClass.aString')
+        def result = new MorphiaFieldQueryResolver().resolve(node, 'serializableClass.aString')
         assert !result.type
         assert result.error == 'Cannot access fields of A.serializableClass since it is annotated with @org.mongodb.morphia.annotations.Serialized'
       })
@@ -82,7 +82,7 @@ class MorphiaFieldAccessResolverTest extends GroovyShellTestCase {
   void testQueryingPastReferenceFieldsError() {
     shell.evaluate '''
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
-        def result = new MorphiaFieldAccessResolver().resolve(node, 'referencedClass.aString')
+        def result = new MorphiaFieldQueryResolver().resolve(node, 'referencedClass.aString')
         assert !result.type
         assert result.error == 'Cannot access fields of A.referencedClass since it is annotated with @org.mongodb.morphia.annotations.Reference'
       })

@@ -19,8 +19,12 @@ import org.objectweb.asm.Opcodes
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
+/**
+ *
+ * @author Shil Sinha
+ */
 @CompileStatic
-class MorphiaFieldAccessResolver implements Opcodes {
+class MorphiaFieldQueryResolver implements Opcodes {
 
   static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
   static final ClassNode EMBEDDED_TYPE = ClassHelper.make(Embedded.class)
@@ -35,11 +39,11 @@ class MorphiaFieldAccessResolver implements Opcodes {
   static final String MONGO_ID_FIELD_NAME = '_id'
 
   /**
-   * Resolves a mongo style field query and returns a FieldQueryResult containing the type of the result if it is able
-   * to be resolved, and an error message otherwise.
+   * Attempts to resolve a mongo style field query and returns a FieldQueryResult containing the type of the result if it is able
+   * to be resolved, or an error message otherwise.
    * @param entityType the classNode from which to begin resolving the query from
    * @param queryString the mongo style query String
-   * @return a FieldQueryResult containing the type of the result if it is able to be resolved, and an error message otherwise.
+   * @return a FieldQueryResult containing the field query result type if it is able to be resolved, and an error message otherwise.
    */
   FieldQueryResult resolve(ClassNode entityType, String queryString) {
     ClassNode ownerType = entityType
