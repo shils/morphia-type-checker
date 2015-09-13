@@ -57,18 +57,26 @@ class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
   }
 
   private void validateIndexAnnotation(AnnotationNode indexNode) {
-    Expression member = indexNode.getMember('fields')
-    if (member) {
-      List<Expression> fieldExpressions = member instanceof ListExpression ? ((ListExpression) member).expressions : [member]
+    Expression indexOptions = indexNode.getMember('options')
+    Expression disableValidation = indexOptions ?
+            ((AnnotationNode) ((AnnotationConstantExpression) indexOptions).value).getMember('disableValidation') :
+            indexNode.getMember('disableValidation')
+
+    if (disableValidation instanceof ConstantExpression && disableValidation.isTrueExpression())
+      return
+
+    Expression fields = indexNode.getMember('fields')
+    if (fields) {
+      List<Expression> fieldExpressions = fields instanceof ListExpression ? ((ListExpression) fields).expressions : [fields]
       for (Expression e: fieldExpressions) {
         validateFieldAnnotation((AnnotationNode) ((AnnotationConstantExpression) e).value)
       }
       return
     }
     //must be using deprecated String value()
-    member = indexNode.getMember('value')
-    if (member) {
-      validateFieldArguments((ConstantExpression) member)
+    fields = indexNode.getMember('value')
+    if (fields) {
+      validateFieldArguments((ConstantExpression) fields)
     }
   }
 
