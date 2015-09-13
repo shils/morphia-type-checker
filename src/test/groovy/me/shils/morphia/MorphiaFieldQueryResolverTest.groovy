@@ -67,7 +67,6 @@ class MorphiaFieldQueryResolverTest extends GroovyShellTestCase {
     shell.evaluate '''
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
         def result = new MorphiaFieldQueryResolver().resolve(node, 'serializableClass.aString')
-        assert !result.type
         assert result.error == 'Cannot access fields of A.serializableClass since it is annotated with @org.mongodb.morphia.annotations.Serialized'
       })
       @CompileStatic
@@ -83,7 +82,6 @@ class MorphiaFieldQueryResolverTest extends GroovyShellTestCase {
     shell.evaluate '''
       @ASTTest(phase = INSTRUCTION_SELECTION, value = {
         def result = new MorphiaFieldQueryResolver().resolve(node, 'referencedClass.aString')
-        assert !result.type
         assert result.error == 'Cannot access fields of A.referencedClass since it is annotated with @org.mongodb.morphia.annotations.Reference'
       })
       @CompileStatic

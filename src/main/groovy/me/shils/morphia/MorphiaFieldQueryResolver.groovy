@@ -39,11 +39,12 @@ class MorphiaFieldQueryResolver implements Opcodes {
   static final String MONGO_ID_FIELD_NAME = '_id'
 
   /**
-   * Attempts to resolve a mongo style field query and returns a FieldQueryResult containing the type of the result if it is able
-   * to be resolved, or an error message otherwise.
+   * Attempts to resolve a mongo style field query and returns either a {@link ResolvedFieldResult} containing the type of the
+   * query result if it is able to be resolved, or a {@link QueryErrorResult} containing an error message otherwise.
+   *
    * @param entityType the classNode from which to begin resolving the query from
    * @param queryString the mongo style query String
-   * @return a FieldQueryResult containing the field query result type if it is able to be resolved, and an error message otherwise.
+   * @return a FieldQueryResult, which is either a ResolvedFieldResult or a QueryErrorResult
    */
   FieldQueryResult resolve(ClassNode entityType, String queryString) {
     ClassNode ownerType = entityType
@@ -82,7 +83,7 @@ class MorphiaFieldQueryResolver implements Opcodes {
       }
     }
     //hack for '_id' field arguments, where the variable 'field' doesn't refer to a real field, but its type is known
-    return new FieldQueryResult(type: field?.type ?: ownerType)
+    return new ResolvedFieldResult(field?.type ?: ownerType)
   }
 
   static FieldNode findFieldByOverridingName(ClassNode ownerType, String overridingName) {
@@ -105,15 +106,29 @@ class MorphiaFieldQueryResolver implements Opcodes {
   }
 
   static FieldQueryResult noPersistedFieldResult(String fieldName, ClassNode ownerType) {
-    return new FieldQueryResult(error: "No such persisted field: $fieldName for class: ${ownerType.getName()}".toString())
+    return new QueryErrorResult("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString())
   }
 
   static FieldQueryResult cannotQueryPastResult(FieldNode field, ClassNode ownerType, AnnotationNode cannotQueryPastAnnotation) {
-    return new FieldQueryResult(error: "Cannot access fields of ${ownerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString())
+    return new QueryErrorResult("Cannot access fields of ${ownerType.name}.$field.name since it is annotated with @${cannotQueryPastAnnotation.classNode.name}".toString())
   }
 
-  static class FieldQueryResult {
-    ClassNode type
+  static interface FieldQueryResult {
+  }
+
+  static class QueryErrorResult implements FieldQueryResult {
     String error
+
+    QueryErrorResult(String error) {
+      this.error = error
+    }
+  }
+
+  static class ResolvedFieldResult implements FieldQueryResult {
+    ClassNode type
+
+    ResolvedFieldResult(ClassNode type) {
+      this.type = type
+    }
   }
 }

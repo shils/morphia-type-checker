@@ -7,6 +7,8 @@ import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension
 import me.shils.morphia.MorphiaFieldQueryResolver.FieldQueryResult
+import me.shils.morphia.MorphiaFieldQueryResolver.QueryErrorResult
+import me.shils.morphia.MorphiaFieldQueryResolver.ResolvedFieldResult
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
@@ -32,10 +34,11 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    */
   ClassNode resolveFieldQuery(String queryString, ASTNode argumentNode) {
     FieldQueryResult result = fieldQueryResolver.resolve(currentEntityType(), queryString)
-    if (result.error) {
-      addStaticTypeError(result.error, argumentNode)
+    if (result instanceof QueryErrorResult) {
+      addStaticTypeError(((QueryErrorResult) result).error, argumentNode)
+      return null
     }
-    return result.type
+    return ((ResolvedFieldResult) result).type
   }
 
   void validateArrayFieldQuery(String queryString, ASTNode argumentNode) {
