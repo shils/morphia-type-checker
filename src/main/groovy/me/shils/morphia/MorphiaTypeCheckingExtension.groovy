@@ -2,6 +2,7 @@ package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import groovy.transform.PackageScope
 import org.bson.types.ObjectId
 import org.codehaus.groovy.ast.GenericsType
 import org.mongodb.morphia.annotations.Embedded
@@ -28,17 +29,17 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
 @CompileStatic
 abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension implements Opcodes {
 
-  static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
-  static final ClassNode EMBEDDED_TYPE = ClassHelper.make(Embedded.class)
-  static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
-  static final ClassNode REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference)
-  static final ClassNode SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
-  static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
-  static final ClassNode OBJECT_ID_TYPE = ClassHelper.make(ObjectId.class)
+  private static final ClassNode TRANSIENT_TYPE = ClassHelper.make(Transient.class)
+  private static final ClassNode EMBEDDED_TYPE = ClassHelper.make(Embedded.class)
+  private static final ClassNode PROPERTY_TYPE = ClassHelper.make(Property.class)
+  private static final ClassNode REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference)
+  private static final ClassNode SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
+  private static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
+  private static final ClassNode OBJECT_ID_TYPE = ClassHelper.make(ObjectId.class)
 
-  static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
-  static final ClassNode[] CANNOT_QUERY_PAST_TYPES = [REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
-  static final String MONGO_ID_FIELD_NAME = '_id'
+  private static final ClassNode[] NAME_OVERRIDING_TYPES = [EMBEDDED_TYPE, PROPERTY_TYPE, REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
+  private static final ClassNode[] CANNOT_QUERY_PAST_TYPES = [REFERENCE_TYPE, SERIALIZED_TYPE] as ClassNode[]
+  private static final String MONGO_ID_FIELD_NAME = '_id'
 
   abstract ClassNode currentEntityType()
 
@@ -48,7 +49,7 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    * @param argumentNode the ASTNode representing the field access chain String
    * @return the type of the result of the chain of field accesses, or null if there is a validation error
    */
-  ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
+  protected ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
     ClassNode ownerType = currentEntityType()
     String[] fieldNames = fieldArgument.split('\\.')
     int index = 0
@@ -90,24 +91,25 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     return field?.type ?: ownerType
   }
 
-  void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
+  protected void validateArrayFieldArgument(String fieldArgument, ASTNode argumentNode) {
     ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(fieldType, COLLECTION_TYPE) && !fieldType.isArray()){
       addStaticTypeError("$fieldArgument does not refer to an array field", argumentNode)
     }
   }
 
-  void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
+  protected void validateNumericFieldArgument(String fieldArgument, ASTNode argumentNode) {
     ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
       addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
     }
   }
 
-  void addNoPersistedFieldError(String fieldName, ClassNode ownerType, ASTNode errorNode) {
+  protected void addNoPersistedFieldError(String fieldName, ClassNode ownerType, ASTNode errorNode) {
     addStaticTypeError("No such persisted field: $fieldName for class: ${ownerType.getName()}".toString(), errorNode)
   }
 
+  @PackageScope
   static FieldNode findFieldByOverridingName(ClassNode ownerType, String overridingName) {
     return ownerType.fields.find { field ->
       AnnotationNode anno = field.getAnnotations().find {
@@ -118,10 +120,12 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     }
   }
 
+  @PackageScope
   static boolean isFieldTransient(FieldNode field) {
     return field.modifiers & ACC_TRANSIENT || field.getAnnotations(TRANSIENT_TYPE)
   }
 
+  @PackageScope
   static ClassNode extractGenericUpperBoundOrType(ClassNode node, int genericsTypeIndex) {
     GenericsType genericsType = node.genericsTypes[genericsTypeIndex]
     return (ClassNode) genericsType.upperBounds.find() ?: genericsType.type

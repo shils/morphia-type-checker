@@ -28,8 +28,8 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
 @CompileStatic
 class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
 
-  static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
-  static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
+  private static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
+  private static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
 
   @Override
   ClassNode currentEntityType(){
@@ -137,7 +137,7 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     return null
   }
 
-  enum ValidationMarker {
+  private enum ValidationMarker {
     DISABLED
   }
 }

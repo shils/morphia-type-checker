@@ -2,6 +2,7 @@ package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import org.bson.types.ObjectId
+import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer
 import org.codehaus.groovy.control.customizers.ImportCustomizer
@@ -14,6 +15,9 @@ import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.annotations.Reference as MorphiaReference
 
 class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
+
+  private static final REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference.class)
+  private static final SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
 
   @Override
   GroovyShell createNewShell() {
@@ -576,7 +580,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @${DAOTypeCheckingExtension.SERIALIZED_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @$SERIALIZED_TYPE.name".toString())
   }
 
   void testQueryingPastReferenceFieldsShouldFail() {
@@ -589,7 +593,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @${DAOTypeCheckingExtension.REFERENCE_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @$REFERENCE_TYPE.name".toString())
   }
 
   @Override

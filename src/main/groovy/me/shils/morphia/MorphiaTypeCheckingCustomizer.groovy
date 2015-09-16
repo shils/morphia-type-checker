@@ -11,7 +11,6 @@ import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.ListExpression
 import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.classgen.GeneratorContext
-import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.control.customizers.CompilationCustomizer
@@ -21,16 +20,16 @@ import org.mongodb.morphia.dao.DAO
 @CompileStatic
 class MorphiaTypeCheckingCustomizer extends CompilationCustomizer {
 
-  static final ClassNode DAO_TCE_TYPE = ClassHelper.make(DAOTypeCheckingExtension.class)
-  static final String DAO_TCE_TYPE_NAME = DAO_TCE_TYPE.name
-  static final ClassNode ENTITY_TCE_TYPE = ClassHelper.make(EntityTypeCheckingExtension.class)
-  static final String ENTITY_TCE_TYPE_NAME = ENTITY_TCE_TYPE.name
+  private static final ClassNode DAO_TCE_TYPE = ClassHelper.make(DAOTypeCheckingExtension.class)
+  private static final String DAO_TCE_TYPE_NAME = DAO_TCE_TYPE.name
+  private static final ClassNode ENTITY_TCE_TYPE = ClassHelper.make(EntityTypeCheckingExtension.class)
+  private static final String ENTITY_TCE_TYPE_NAME = ENTITY_TCE_TYPE.name
 
-  static final ClassNode DAO_TYPE = ClassHelper.make(DAO.class)
-  static final ClassNode ENTITY_TYPE = ClassHelper.make(Entity.class)
-  static final ClassNode TYPE_CHECKED_TYPE = ClassHelper.make(TypeChecked.class)
-  static final ClassNode COMPILE_STATIC_TYPE = ClassHelper.make(CompileStatic.class)
-  static final ClassNode[] STC_TYPES = [TYPE_CHECKED_TYPE, COMPILE_STATIC_TYPE] as ClassNode[]
+  private static final ClassNode DAO_TYPE = ClassHelper.make(DAO.class)
+  private static final ClassNode ENTITY_TYPE = ClassHelper.make(Entity.class)
+  private static final ClassNode TYPE_CHECKED_TYPE = ClassHelper.make(TypeChecked.class)
+  private static final ClassNode COMPILE_STATIC_TYPE = ClassHelper.make(CompileStatic.class)
+  private static final ClassNode[] STC_TYPES = [TYPE_CHECKED_TYPE, COMPILE_STATIC_TYPE] as ClassNode[]
   private static final String SKIP_STRING = TypeCheckingMode.SKIP.toString()
 
   MorphiaTypeCheckingCustomizer() {
@@ -38,10 +37,8 @@ class MorphiaTypeCheckingCustomizer extends CompilationCustomizer {
   }
 
   @Override
-  void call(SourceUnit source, GeneratorContext context, ClassNode classNode) throws CompilationFailedException {
-    AnnotationNode stcAnnotation = classNode.getAnnotations().find {
-      STC_TYPES.contains(it.classNode)
-    }
+  void call(SourceUnit source, GeneratorContext context, ClassNode classNode) {
+    AnnotationNode stcAnnotation = classNode.getAnnotations().find { STC_TYPES.contains(it.classNode) }
     if (!stcAnnotation || isSkipMode(stcAnnotation))
       return
 
