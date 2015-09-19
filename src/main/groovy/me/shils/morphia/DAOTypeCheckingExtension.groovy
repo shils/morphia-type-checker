@@ -67,6 +67,7 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     String argValue = (String) ((ConstantExpression) fieldArgExpr).value
     switch (call.methodAsString) {
       case 'field':
+      case 'criteria':
         resolveFieldArgument(argValue, fieldArgExpr)
         break
       case 'filter':

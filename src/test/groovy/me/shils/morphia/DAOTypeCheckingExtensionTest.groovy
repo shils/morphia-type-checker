@@ -53,6 +53,19 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
+  void testIncorrectCriteriaQueryShouldFail(){
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(int anInt) {
+          findOne(createQuery().criteria('aInt').equal(anInt))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
   void testNonConstantFieldArgsInQueryMethodCallsShouldNotFail() {
     shell.evaluate '''
       class ADao extends BasicDAO<A, ObjectId> {
@@ -594,6 +607,24 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       null
     '''
     assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @$REFERENCE_TYPE.name".toString())
+  }
+
+  void testMethodLevelValidation() {
+    def message = super.shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import me.shils.morphia.A
+      import groovy.transform.CompileStatic
+
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        @CompileStatic(extensions = 'me.shils.morphia.DAOTypeCheckingExtension')
+        A aQuery(int anInt) {
+          findOne(createQuery().field('aInt').equal(anInt))
+        }
+      }
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
   @Override
