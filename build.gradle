@@ -1,13 +1,17 @@
+plugins {
+  id "com.jfrog.bintray" version "1.3.1"
+}
 apply plugin: 'groovy'
 apply plugin: 'jacoco'
 apply plugin: 'maven-publish'
 
 group               = 'me.shils'
 version             = '0.1.0'
-targetCompatibility = 1.6
+targetCompatibility = 1.7
 
 repositories {
   mavenCentral()
+  jcenter()
 }
 
 dependencies {
@@ -33,6 +37,14 @@ artifacts {
   archives javadocJar
 }
 
+if( !hasProperty( 'bintrayUser' ) ) {
+  ext.bintrayUser = ''
+}
+
+if( !hasProperty( 'bintrayKey' ) ) {
+  ext.bintrayKey = ''
+}
+
 def pomConfig = {
   scm {
     url 'https://github.com/shils/morphia-type-checker'
@@ -51,6 +63,23 @@ def pomConfig = {
       id 'S'
       name 'Shil Sinha'
       email 'shil.sinha@gmail.com'
+    }
+  }
+}
+
+bintray {
+  user = bintrayUser
+  key = bintrayKey
+  publications = ['mavenJava']
+  pkg {
+    repo = 'maven'
+    name = 'morphia-type-checker'
+    licenses = ['Apache-2.0']
+    vcsUrl = 'https://github.com/shils/morphia-type-checker.git'
+    version {
+      name = '0.1.0'
+      desc = 'Morphia Type Checker 0.1.0'
+      released = new Date()
     }
   }
 }
