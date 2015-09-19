@@ -71,7 +71,7 @@ publishing {
       pom.withXml {
         def root = asNode()
         root.appendNode('name', 'Morphia Type Checker')
-        root.appendNode('description', 'A set of Groovy type checking extensions for Morphia.')
+        root.appendNode('description', 'Compile time Morphia validation using Groovy type checking extensions.')
         root.appendNode('url', 'https://github.com/shils/morphia-type-checker')
         root.appendNode('inceptionYear', '2015')
         root.children().last() + pomConfig
