@@ -41,12 +41,27 @@ our code will fail compilation with the following error:
 
 ```[Static type checking] - No such persisted field: userd for class: User```
 
+# Extensions
+
+### DAOTypeCheckingExtension
+
+This extension validates the usage of strings referencing fields in DAOs (classes that implement the `DAO` interface), including:
+
+* arguments to `Query` methods `criteria`, `field`, `filter`, and `order`
+* arguments to `UpdateOperations` methods `add`, `addAll`, `dec`, `inc`, `max`, `min`, `removeAll`, `removeFirst`, `removeLast`, `set`, `setOnInsert`, and `unset`
+
+**It is assumed that queries and updates within the DAO target the DAO's entity class.**
 
 
+### EntityTypeCheckingExtension
 
-## Usage
+This extension validates the usage of strings referencing fields in Entities (classes annotated with `@Entity`), including:
 
-The easiest way to validate your Morphia Entities and DAOs at compile time is by using a [config script](http://docs.groovy-lang.org/latest/html/documentation/#_config_script_flag). Just add an instance of `MorphiaTypeCheckingCustomizer` to the bound `configuration` variable and the appropriate type checking extensions will be applied to your Entities (classes annotated with `@Entity`) and DAOs (classes that implement the `DAO` interface):
+* `value` members of `@Index` and `@Field`
+
+# Usage
+
+The easiest way to validate your Morphia Entities and DAOs at compile time is by using a [config script](http://docs.groovy-lang.org/latest/html/documentation/#_config_script_flag). Just add an instance of `MorphiaTypeCheckingCustomizer` to the bound `configuration` variable and the appropriate type checking extensions will be applied to your Entities and DAOs:
 
 ```groovy
 import me.shils.morphia.MorphiaTypeCheckingCustomizer
@@ -55,3 +70,17 @@ configuration.addCompilationCustomizers(new MorphiaTypeCheckingCustomizer())
 ```
 
 Alternatively, you can add the the appropriate extensions to your statically type checked classes yourself - `EntityTypeCheckingExtension` for Entities, and `DAOTypeCheckingExtension` for DAOs.
+
+### Compatibilities
+
+To use Morphia Type Checker, you must also be using (at the minimum):
+
+**Java**: 7
+
+**Groovy**: 2.4.0
+
+**Morphia**: 0.107
+
+# Building
+
+To build from source, just run `./gradlew build` from the root directory of the project.
