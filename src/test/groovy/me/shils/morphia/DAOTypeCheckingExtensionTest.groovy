@@ -2,6 +2,7 @@ package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import org.bson.types.ObjectId
+import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer
 import org.codehaus.groovy.control.customizers.ImportCustomizer
@@ -14,6 +15,9 @@ import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.annotations.Reference as MorphiaReference
 
 class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
+
+  private static final REFERENCE_TYPE = ClassHelper.make(org.mongodb.morphia.annotations.Reference.class)
+  private static final SERIALIZED_TYPE = ClassHelper.make(Serialized.class)
 
   @Override
   GroovyShell createNewShell() {
@@ -42,6 +46,19 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
         A aQuery(int anInt) {
           findOne(createQuery().field('aInt').equal(anInt))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
+  void testIncorrectCriteriaQueryShouldFail(){
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A aQuery(int anInt) {
+          findOne(createQuery().criteria('aInt').equal(anInt))
         }
       }
       null
@@ -534,7 +551,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
-  void testValidationOfConstructorCalls() {
+  void testValidationOfQueriesCreatedByConstructorCalls() {
     def message = shouldFail '''
       class ADao extends BasicDAO<A, ObjectId> {
 
@@ -542,6 +559,15 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
           Query query = new QueryImpl(A.class, getDatastore().getCollection(), getDatastore()).field('aInt').equal(anInt)
           findOne(query)
         }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
+  void testValidationOfUpdateOpsCreatedByConstructorCalls() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
 
         void anUpdate(String aString) {
           UpdateOperations ops = new UpdateOpsImpl(A.class, getDatastore().getMapper()).set('aStrin', aString)
@@ -550,7 +576,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
     assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
@@ -576,7 +601,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @${MorphiaFieldQueryResolver.SERIALIZED_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.serialized since it is annotated with @$SERIALIZED_TYPE.name".toString())
   }
 
   void testQueryingPastReferenceFieldsShouldFail() {
@@ -589,7 +614,25 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @${MorphiaFieldQueryResolver.REFERENCE_TYPE.name}".toString())
+    assert message.contains("Cannot access fields of me.shils.morphia.A.reference since it is annotated with @$REFERENCE_TYPE.name".toString())
+  }
+
+  void testMethodLevelValidation() {
+    def message = super.shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import me.shils.morphia.A
+      import groovy.transform.CompileStatic
+
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        @CompileStatic(extensions = 'me.shils.morphia.DAOTypeCheckingExtension')
+        A aQuery(int anInt) {
+          findOne(createQuery().field('aInt').equal(anInt))
+        }
+      }
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
   @Override

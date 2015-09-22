@@ -20,7 +20,7 @@ import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implem
 @CompileStatic
 abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtension {
 
-  static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
+  private static final ClassNode COLLECTION_TYPE = ClassHelper.make(Collection.class)
 
   protected MorphiaFieldQueryResolver fieldQueryResolver = new MorphiaFieldQueryResolver()
 
@@ -32,7 +32,7 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
    * @param argumentNode the ASTNode representing the query String
    * @return the type of the field query result, or null if there is a validation error
    */
-  ClassNode resolveFieldQuery(String queryString, ASTNode argumentNode) {
+  protected ClassNode resolveFieldQuery(String queryString, ASTNode argumentNode) {
     FieldQueryResult result = fieldQueryResolver.resolve(currentEntityType(), queryString)
     if (result instanceof QueryErrorResult) {
       addStaticTypeError(((QueryErrorResult) result).error, argumentNode)
@@ -41,14 +41,14 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     return ((ResolvedFieldResult) result).type
   }
 
-  void validateArrayFieldQuery(String queryString, ASTNode argumentNode) {
+  protected void validateArrayFieldQuery(String queryString, ASTNode argumentNode) {
     ClassNode fieldType = resolveFieldQuery(queryString, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(fieldType, COLLECTION_TYPE) && !fieldType.isArray()){
       addStaticTypeError("$queryString does not refer to an array field", argumentNode)
     }
   }
 
-  void validateNumericFieldQuery(String queryString, ASTNode argumentNode) {
+  protected void validateNumericFieldQuery(String queryString, ASTNode argumentNode) {
     ClassNode fieldType = resolveFieldQuery(queryString, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
       addStaticTypeError("$queryString does not refer to a numeric field", argumentNode)

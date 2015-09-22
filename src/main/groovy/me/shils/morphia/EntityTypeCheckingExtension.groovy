@@ -11,7 +11,6 @@ import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.ListExpression
 import org.codehaus.groovy.runtime.StringGroovyMethods
 import org.mongodb.morphia.annotations.Entity
-import org.mongodb.morphia.annotations.Index
 import org.mongodb.morphia.annotations.Indexes
 
 /**
@@ -23,9 +22,8 @@ import org.mongodb.morphia.annotations.Indexes
 @InheritConstructors
 class EntityTypeCheckingExtension extends MorphiaTypeCheckingExtension {
 
-  static final ClassNode INDEX_TYPE = ClassHelper.make(Index)
-  static final ClassNode INDEXES_TYPE = ClassHelper.make(Indexes)
-  static final ClassNode ENTITY_TYPE = ClassHelper.make(Entity)
+  private static final ClassNode INDEXES_TYPE = ClassHelper.make(Indexes)
+  private static final ClassNode ENTITY_TYPE = ClassHelper.make(Entity)
 
   private ClassNode entityType
 
