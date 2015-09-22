@@ -551,7 +551,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
-  void testValidationOfConstructorCalls() {
+  void testValidationOfQueriesCreatedByConstructorCalls() {
     def message = shouldFail '''
       class ADao extends BasicDAO<A, ObjectId> {
 
@@ -559,6 +559,15 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
           Query query = new QueryImpl(A.class, getDatastore().getCollection(), getDatastore()).field('aInt').equal(anInt)
           findOne(query)
         }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
+  void testValidationOfUpdateOpsCreatedByConstructorCalls() {
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
 
         void anUpdate(String aString) {
           UpdateOperations ops = new UpdateOpsImpl(A.class, getDatastore().getMapper()).set('aStrin', aString)
@@ -567,7 +576,6 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       }
       null
     '''
-    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
     assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
   }
 
