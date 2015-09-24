@@ -58,7 +58,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(int anInt) {
-          findOne(createQuery().criteria('aInt').equal(anInt))
+          findOne((Query<A>) createQuery().criteria('aInt').equal(anInt).getQuery())
         }
       }
       null
@@ -179,7 +179,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
         }
 
         void minAnInt(int anInt) {
-          update(createQuery(), createUpdateOperations().dec('minInt', anInt))
+          update(createQuery(), createUpdateOperations().min('minInt', anInt))
         }
 
         void addToAList(int anInt) {
@@ -187,7 +187,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
         }
 
         void addAllToAList(List ints) {
-          update(createQuery(), createUpdateOperations().addAll('addAllList', ints))
+          update(createQuery(), createUpdateOperations().addAll('addAllList', ints, false))
         }
 
         void removeFirstFromAList() {
@@ -199,7 +199,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
         }
 
         void removeAllFromAList(int anInt) {
-          update(createQuery(), createUpdateOperations().removeAll('removeAllList'))
+          update(createQuery(), createUpdateOperations().removeAll('removeAllList', anInt))
         }
 
       }
@@ -556,7 +556,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       class ADao extends BasicDAO<A, ObjectId> {
 
         A aQuery(int anInt) {
-          Query query = new QueryImpl(A.class, getDatastore().getCollection(), getDatastore()).field('aInt').equal(anInt)
+          Query query = new QueryImpl(A.class, getDatastore().getCollection(A.class), getDatastore()).field('aInt').equal(anInt)
           findOne(query)
         }
       }
@@ -570,7 +570,7 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
       class ADao extends BasicDAO<A, ObjectId> {
 
         void anUpdate(String aString) {
-          UpdateOperations ops = new UpdateOpsImpl(A.class, getDatastore().getMapper()).set('aStrin', aString)
+          UpdateOperations ops = new UpdateOpsImpl(A.class, getDs().getMapper()).set('aStrin', aString)
           update(createQuery(), ops)
         }
       }
