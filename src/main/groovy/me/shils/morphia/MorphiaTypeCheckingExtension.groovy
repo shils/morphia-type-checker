@@ -43,14 +43,18 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
 
   abstract ClassNode currentEntityType()
 
+  protected ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
+    resolveFieldArgument(currentEntityType(), fieldArgument, argumentNode)
+  }
+
   /**
    * Resolves a chain of field accesses and returns the type of the result
+   * @param ownerType
    * @param fieldArgument the field access chain String
    * @param argumentNode the ASTNode representing the field access chain String
    * @return the type of the result of the chain of field accesses, or null if there is a validation error
    */
-  protected ClassNode resolveFieldArgument(String fieldArgument, ASTNode argumentNode) {
-    ClassNode ownerType = currentEntityType()
+  protected ClassNode resolveFieldArgument(ClassNode ownerType, String fieldArgument, ASTNode argumentNode) {
     String[] fieldNames = fieldArgument.split('\\.')
     int index = 0
     if (MONGO_ID_FIELD_NAME == fieldNames[0] && !ownerType.getField(MONGO_ID_FIELD_NAME)) {

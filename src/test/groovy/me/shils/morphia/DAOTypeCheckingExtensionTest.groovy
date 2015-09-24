@@ -1,6 +1,8 @@
 package me.shils.morphia
 
 import groovy.transform.CompileStatic
+import groovy.transform.NotYetImplemented
+import me.shils.morphia.annotations.FieldName
 import org.bson.types.ObjectId
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.control.CompilerConfiguration
@@ -13,6 +15,7 @@ import org.mongodb.morphia.annotations.Property
 import org.mongodb.morphia.annotations.Serialized
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.annotations.Reference as MorphiaReference
+import org.mongodb.morphia.query.UpdateOperations
 
 class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
 
@@ -33,7 +36,8 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
             'org.bson.types.ObjectId',
             'groovy.transform.CompileStatic',
             'me.shils.morphia.A',
-            'me.shils.morphia.B'
+            'me.shils.morphia.B',
+            'me.shils.morphia.annotations.FieldName'
     )
     def asttc = new ASTTransformationCustomizer(CompileStatic, extensions: ['me.shils.morphia.DAOTypeCheckingExtension'])
     config.addCompilationCustomizers(ic, asttc)
@@ -635,6 +639,21 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
+  void testFieldNameValidation() {
+    def message = shouldFail '''
+      import static me.shils.morphia.MorphiaExtensionMethods.safeSet
+
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        void anUpdate(String aString) {
+          update(createQuery(), safeSet(createUpdateOperations(), 'aStrin', aString))
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aStrin for class: me.shils.morphia.A')
+  }
+
   @Override
   String shouldFail(String script) {
     shouldFail {
@@ -686,4 +705,11 @@ class C {
 
 class D implements Serializable {
   String aString
+}
+
+class MorphiaExtensionMethods {
+
+  static <T> UpdateOperations<T> safeSet(UpdateOperations<T> updateOps, @FieldName(parameterIndex = 0, genericTypeIndex = 0) String field, Object val) {
+    updateOps.set(field, val)
+  }
 }
