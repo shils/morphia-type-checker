@@ -172,4 +172,41 @@ class MorphiaTypeCheckingCustomizerTest extends GroovyShellTestCase {
       null
     '''
   }
+
+  void testCustomizerForMorphiaClassWithExistingExtensionsString() {
+    String message = shouldFail '''
+      @ASTTest(phase = CANONICALIZATION, value = {
+        def extensionsExpr = node.getAnnotations(COMPILE_STATIC_TYPE).first().getMember('extensions').expressions*.value
+        assert extensionsExpr as Set == ['me.shils.morphia.EntityTypeCheckingExtension', 'FakeExtension'] as Set
+        assert false
+      })
+      @Entity
+      @CompileStatic(extensions = 'FakeExtension')
+      class A {}
+      null
+    '''
+    assert message == 'assert false\n'
+  }
+
+  void testCustomizerForMorphiaClassWithExistingExtensionsList() {
+    String message = shouldFail '''
+      @ASTTest(phase = CANONICALIZATION, value = {
+        def extensionsExpr = node.getAnnotations(COMPILE_STATIC_TYPE).first().getMember('extensions').expressions*.value
+        assert extensionsExpr as Set == ['me.shils.morphia.EntityTypeCheckingExtension', 'FakeExtension'] as Set
+        assert false
+      })
+      @Entity
+      @CompileStatic(extensions = ['FakeExtension'])
+      class A {}
+      null
+    '''
+    assert message == 'assert false\n'
+  }
+
+  @Override
+  String shouldFail(String script) {
+    shouldFail {
+      shell.evaluate(script)
+    }
+  }
 }
