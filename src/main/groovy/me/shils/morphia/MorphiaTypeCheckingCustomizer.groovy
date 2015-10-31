@@ -42,7 +42,7 @@ class MorphiaTypeCheckingCustomizer extends CompilationCustomizer {
     if (!stcAnnotation || isSkipMode(stcAnnotation))
       return
 
-    ListExpression extensions = (ListExpression) stcAnnotation.getMember('extensions') ?: new ListExpression()
+    ListExpression extensions = getExtensionsList(stcAnnotation)
     if (classNode.implementsInterface(DAO_TYPE)) {
       extensions.addExpression(new ConstantExpression(DAO_TCE_TYPE_NAME))
     } else if (classNode.getAnnotations(ENTITY_TYPE)) {
@@ -57,5 +57,13 @@ class MorphiaTypeCheckingCustomizer extends CompilationCustomizer {
     Expression typeCheckingMode = stcAnnotation.getMember('value')
     return (typeCheckingMode instanceof ConstantExpression && SKIP_STRING == ((ConstantExpression) typeCheckingMode).value.toString()) ||
             (typeCheckingMode instanceof PropertyExpression && SKIP_STRING == ((PropertyExpression)typeCheckingMode).propertyAsString)
+  }
+
+  private static ListExpression getExtensionsList(AnnotationNode stcAnnotation) {
+    Expression extensions = stcAnnotation.getMember('extensions') ?: new ListExpression()
+    if (extensions instanceof ListExpression) {
+      return (ListExpression) extensions
+    }
+    return new ListExpression([extensions])
   }
 }
