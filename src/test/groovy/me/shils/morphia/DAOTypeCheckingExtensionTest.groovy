@@ -6,6 +6,7 @@ import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer
 import org.codehaus.groovy.control.customizers.ImportCustomizer
+import org.intellij.lang.annotations.Language
 import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Entity
 import org.mongodb.morphia.annotations.Id
@@ -636,10 +637,15 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
   }
 
   @Override
-  String shouldFail(String script) {
+  String shouldFail(@Language('Groovy') String script) {
     shouldFail {
       shell.evaluate(script)
     }
+  }
+
+  @Override
+  void assertScript(@Language('Groovy') String script) throws Exception {
+    shell.evaluate(script)
   }
 }
 
