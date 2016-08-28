@@ -5,6 +5,7 @@ import groovy.transform.InheritConstructors
 import groovy.transform.PackageScope
 import org.bson.types.ObjectId
 import org.codehaus.groovy.ast.GenericsType
+import org.codehaus.groovy.runtime.StringGroovyMethods
 import org.mongodb.morphia.annotations.Embedded
 import org.mongodb.morphia.annotations.Serialized
 import org.objectweb.asm.Opcodes
@@ -102,6 +103,15 @@ abstract class MorphiaTypeCheckingExtension extends AbstractTypeCheckingExtensio
     ClassNode fieldType = resolveFieldArgument(fieldArgument, argumentNode)
     if (fieldType && !implementsInterfaceOrIsSubclassOf(ClassHelper.getWrapper(fieldType), ClassHelper.Number_TYPE)){
       addStaticTypeError("$fieldArgument does not refer to a numeric field", argumentNode)
+    }
+  }
+
+  @PackageScope
+  void validateFieldArguments(ConstantExpression argsExpression) {
+    CharSequence argsString = (CharSequence) argsExpression.value
+    List<String> fieldArguments = StringGroovyMethods.tokenize(argsString, ', -')
+    for (String arg: fieldArguments) {
+      resolveFieldArgument(arg, argsExpression)
     }
   }
 

@@ -74,7 +74,7 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
         resolveFieldArgument(argValue.split(' ').first(), fieldArgExpr)
         break
       case 'order':
-        resolveFieldArgument(argValue.startsWith('-') ? argValue.substring(1) : argValue, fieldArgExpr)
+        validateFieldArguments((ConstantExpression) fieldArgExpr)
         break
     }
   }

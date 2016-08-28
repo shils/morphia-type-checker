@@ -636,6 +636,18 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
   }
 
+  void testQueryOrderedOnMultipleFields() {
+    assertScript '''
+      class ADao extends BasicDAO<A, ObjectId> {
+
+        A anOrderedQuery() {
+          findOne(createQuery().order('anInt, -aString').limit(1))
+        }
+      }
+      null
+    '''
+  }
+
   @Override
   String shouldFail(@Language('Groovy') String script) {
     shouldFail {
