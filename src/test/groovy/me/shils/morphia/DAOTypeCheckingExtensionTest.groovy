@@ -648,6 +648,79 @@ class DAOTypeCheckingExtensionTest extends GroovyShellTestCase {
     '''
   }
 
+  void testShouldInferEntityTypeInInnerClass() {
+    assertScript '''
+      class ADao extends BasicDAO<A, ObjectId> {
+        class AHelper {
+          A queryFromInner() {
+            findOne(createQuery().field('anInt').equal(3))
+          }
+        }
+      }
+      null
+    '''
+
+    def message = shouldFail '''
+      class ADao extends BasicDAO<A, ObjectId> {
+        class AHelper {
+          A queryFromInner() {
+            findOne(createQuery().field('aInt').equal(3))
+          }
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
+  void testShouldNotValidateNonDAONestedClass() {
+    assertScript '''
+      class ADao extends BasicDAO<A, ObjectId> {
+        static class AHelper {
+          A findOne(String field, Object value) { null }
+          void doSomething() {
+            findOne('not a field', null)
+          }
+        }
+      }
+      null
+    '''
+  }
+
+  void testShouldValidateDAONestedClass() {
+    def message = shouldFail '''
+      class Container {
+        static class ADao extends BasicDAO<A, ObjectId> {
+          A aQuery() {
+            findOne('aInt', 1)
+          }
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
+  void testMethodLevelValidationInNestedDAOClass() {
+    def message = super.shouldFail '''
+      import org.mongodb.morphia.dao.BasicDAO
+      import org.bson.types.ObjectId
+      import me.shils.morphia.A
+      import groovy.transform.CompileStatic
+
+      class Container {
+        static class ADao extends BasicDAO<A, ObjectId> {
+          @CompileStatic(extensions = 'me.shils.morphia.DAOTypeCheckingExtension')
+          A aQuery() {
+            findOne('aInt', 1)
+          }
+        }
+      }
+      null
+    '''
+    assert message.contains('No such persisted field: aInt for class: me.shils.morphia.A')
+  }
+
   @Override
   String shouldFail(@Language('Groovy') String script) {
     shouldFail {

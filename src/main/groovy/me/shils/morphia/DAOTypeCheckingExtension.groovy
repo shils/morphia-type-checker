@@ -3,6 +3,7 @@ package me.shils.morphia
 
 import groovy.transform.CompileStatic
 import groovy.transform.InheritConstructors
+import org.codehaus.groovy.ast.MethodNode
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression
 import org.codehaus.groovy.ast.expr.MethodCallExpression
 import org.codehaus.groovy.ast.expr.StaticMethodCallExpression
@@ -14,8 +15,11 @@ import org.codehaus.groovy.ast.expr.ArgumentListExpression
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.MethodCall
+import org.mongodb.morphia.dao.DAO
 import org.mongodb.morphia.query.Query
 import org.mongodb.morphia.query.UpdateOperations
+
+import java.lang.reflect.Modifier
 
 import static org.codehaus.groovy.transform.stc.StaticTypeCheckingSupport.implementsInterfaceOrIsSubclassOf
 
@@ -30,10 +34,11 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
 
   private static final ClassNode UPDATE_OPERATIONS_TYPE = ClassHelper.make(UpdateOperations.class)
   private static final ClassNode QUERY_TYPE = ClassHelper.make(Query.class)
+  private static final ClassNode DAO_TYPE = ClassHelper.make(DAO.class)
 
   @Override
   ClassNode currentEntityType(){
-    return getEnclosingClassNode().getUnresolvedSuperClass(false).genericsTypes[0].type
+    findEnclosingEntityType()
   }
 
   @Override
@@ -57,6 +62,11 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     } else if (implementsInterfaceOrIsSubclassOf(receiverType, UPDATE_OPERATIONS_TYPE)) {
       validateUpdateOpsMethodCall(call)
     }
+  }
+
+  @Override
+  boolean beforeVisitMethod(MethodNode node) {
+    return !findEnclosingEntityType()
   }
 
   private void validateQueryMethodCall(MethodCall call) {
@@ -127,6 +137,18 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
     }
   }
 
+  private ClassNode findEnclosingEntityType() {
+    ClassNode cn = getEnclosingClassNode()
+    while (cn && !cn.implementsInterface(DAO_TYPE)) {
+      if (Modifier.isStatic(cn.modifiers)) {
+        cn = null
+        break
+      }
+      cn = cn.outerClass
+    }
+    cn ? extractEntityType(cn) : null
+  }
+
   private static Expression callAsExpression(MethodCall call) {
     if (call instanceof ConstructorCallExpression)
       return (ConstructorCallExpression) call
@@ -136,6 +158,10 @@ class DAOTypeCheckingExtension extends MorphiaTypeCheckingExtension {
       return (StaticMethodCallExpression) call
 
     return null
+  }
+
+  private static ClassNode extractEntityType(ClassNode node) {
+    node.getUnresolvedSuperClass(false).genericsTypes[0].type
   }
 
   private enum ValidationMarker {
